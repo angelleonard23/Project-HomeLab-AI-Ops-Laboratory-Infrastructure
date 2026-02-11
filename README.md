@@ -92,3 +92,58 @@ Um die Internetverbindung für die VM im VLAN 30 zu etablieren, wurden folgende 
 ## Sensitive Daten & Vault
 Entsprechend der Projektrichtlinie vom 28.01.2026 werden alle sensiblen Variablen und die finale Netzwerk-Topologie in der Datei `vault_passwords.yml` verwaltet.
 
+## 5. System-Optimierung & Management (Stand: 11.02.2026)
+
+Nachdem die grundlegende Konnektivität hergestellt war, wurde die VM für den professionellen Betrieb in Proxmox und die Automatisierung vorbereitet.
+
+### QEMU Guest Agent Integration
+Um eine bessere Kommunikation zwischen dem Proxmox-Host und der VM zu ermöglichen (z.B. für sauberes Herunterfahren und IP-Anzeige), wurde der Guest Agent installiert.
+* **Befehl:** `sudo apt install qemu-guest-agent`
+* **Status:** Der Dienst wurde erfolgreich aktiviert, auch wenn Ubuntu ihn als statische Unit verwaltet.
+* **Ergebnis:** Die IP-Adresse der VM ist nun direkt in der Proxmox-Übersicht sichtbar.
+
+> ![Proxmox Guest Agent Status](./img/proxmox_guest_agent.png)
+
+---
+
+### Statische Netzwerk-Konfiguration (Netplan)
+Um sicherzustellen, dass die VM für die Automatisierung immer unter derselben Adresse erreichbar bleibt, wurde von DHCP auf eine statische Konfiguration umgestellt.
+* **Datei:** `/etc/netplan/50-cloud-init.yaml`
+* **Konfiguration:**
+  * IP: `192.168.30.20/24`
+  * Gateway: `192.168.30.1`
+  * DNS: `192.168.30.1` (pfSense) & `8.8.8.8`
+
+> **Hier Screenshot einfügen:** (Inhalt der Netplan YAML Datei)
+> ![Netplan Config](./img/netplan_yaml.png)
+
+---
+
+## 6. Automatisierung mit Ansible & Vault
+
+Der Zugriff auf das Labor erfolgt nun zentral vom Management-PC (Linux Mint) via Ansible.
+
+### Sicherheits-Infrastruktur (SSH & Vault)
+* **SSH-Keys:** Der öffentliche Schlüssel des Management-PCs wurde übertragen (`ssh-copy-id`), um passwortlose Logins zu ermöglichen.
+* **Ansible Vault:** Sensible Daten, wie das `sudo`-Passwort des Users `angel`, werden verschlüsselt in `group_vars/all.yml` gespeichert.
+* **Vault-Automatik:** Über eine lokale `.vault_pass.txt` und die `ansible.cfg` wurde der Workflow so optimiert, dass keine manuelle Passwortabfrage bei der Ausführung von Playbooks mehr nötig ist.
+
+> **Hier Screenshot einfügen:** (Erfolgreicher Ansible Ping oder `whoami` Testlauf)
+> ![Ansible Success](./img/ansible_test_root.png)
+
+### Automatisierte Wartungs-Playbooks
+Bisher implementierte Workflows:
+1. **`update_system.yml`**: Führt ein vollständiges `apt upgrade` durch.
+2. **`check_reboot.yml`**: Prüft, ob die Datei `/var/run/reboot-required` existiert und startet die VM bei Bedarf sicher neu.
+
+> **Hier Screenshot einfügen:** (Ansible Playbook Run ohne Fehler)
+> ![Ansible Playbook Run](./img/ansible_playbook_run.png)
+
+---
+
+## Aktueller Projektstatus (Meilenstein 1 erreicht)
+- [x] Isolierte Netzwerkumgebung (VLAN 30) aktiv.
+- [x] Internetzugriff & DNS über pfSense stabil.
+- [x] VM-Management via Proxmox Guest Agent aktiv.
+- [x] Vollständige Steuerung über Ansible-Automatisierung etabliert.
+

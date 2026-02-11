@@ -1,4 +1,4 @@
-# Project HomeLab – Proxmox & pfSense Security Lab
+# Project HomeLab - AI-Ops Labor Infrastruktur
 
 Dieses Repository dokumentiert meinen Lern- und Aufbauprozess eines sicherheitsfokussierten HomeLabs
 mit Proxmox VE, pfSense Firewall, Netzwerksegmentierung und Virtualisierung.

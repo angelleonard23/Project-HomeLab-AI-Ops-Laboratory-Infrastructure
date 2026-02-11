@@ -147,3 +147,33 @@ Bisher implementierte Workflows:
 - [x] VM-Management via Proxmox Guest Agent aktiv.
 - [x] Vollständige Steuerung über Ansible-Automatisierung etabliert.
 
+## 7. Infrastruktur & Container-Automatisierung (Stand: 11.02.2026)
+
+Nach der erfolgreichen Netzwerkanbindung wurde die VM `ai-ops-01` vollständig automatisiert als **Docker-Host** provisioniert.
+
+### Meilenstein: Infrastructure as Code (IaC)
+Der gesamte Setup-Prozess wird über Ansible gesteuert. Dies umfasst:
+* **System-Wartung:** Intelligente Prüfung auf notwendige Neustarts (`check_reboot.yml`).
+* **Docker-Stack:** Automatisierte Installation der Docker Engine & Docker Compose (`setup_docker.yml`).
+* **Security:** Sichere Verwaltung von Datenbank-Passwörtern und API-Keys mittels **Ansible Vault**.
+
+> **Beweis 1: Intelligente Systemwartung**
+> Ansible erkennt eigenständig, ob ein Neustart erforderlich ist und überspringt den Task (`skipping`), wenn das System aktuell ist.
+> ![Ansible Reboot Check](./img/ansible_reboot_logic.png)
+
+---
+
+### Meilenstein: Container-Host Ready
+Die VM ist nun bereit für das Deployment von n8n und KI-Tools. Der Benutzer `angel` wurde berechtigt, Docker-Container ohne `sudo` zu verwalten, was die Sicherheit und den Workflow verbessert.
+
+> **Beweis 2: Erfolgreiche Docker-Provisionierung**
+> Der Abschlussbericht des Playbooks zeigt die erfolgreiche Einrichtung aller Komponenten und User-Berechtigungen.
+> ![Docker Setup Success](./img/docker_setup_recap.png)
+
+---
+
+## Aktueller Projektstatus
+- [x] Statische IP & Guest-Agent konfiguriert.
+- [x] Ansible Vault & SSH-Key Authentifizierung aktiv.
+- [x] Docker & Docker Compose vollständig einsatzbereit.
+- [ ] **Nächster Schritt:** Start des n8n-Stacks (n8n + Postgres).

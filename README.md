@@ -232,3 +232,40 @@ In n8n wurde ein intelligenter Workflow erstellt, der die Brücke zwischen dem A
 > **Beweis: Erfolgreicher KI-Durchlauf**
 > Das Bild zeigt den validierten Workflow. Die grünen Indikatoren bestätigen, dass der AI-Agent erfolgreich mit Llama3 kommuniziert und eine Antwort generiert hat.
 > ![n8n AI Success](./screenshots/10_n8n_ai_success.png)
+
+---
+## 11. Enterprise-Upgrade: OpenClaw & Model Context Protocol (MCP)
+
+Um das Lab von einer einfachen Automatisierung zu einer proaktiven KI-Steuerungsebene zu heben, wurden **OpenClaw** als Interface und **MCP-Server** für den Kontext-Zugriff implementiert.
+
+### 11.1 Deployment der Kontroll-Ebene
+Die Bereitstellung erfolgte modular über das Playbook `deploy_ai_tools.yml`. 
+* **OpenClaw:** Fungiert als zentrales Hirn und ist direkt mit der lokalen Ollama-Instanz (`llama3`) verbunden.
+* **MCP Filesystem Server:** Erlaubt der KI den sicheren, Lese-/Schreibzugriff auf definierte Verzeichnisse (`/n8n-stack`), um Konfigurationen selbstständig zu analysieren.
+
+### 11.2 Netzwerkkonfiguration & Sicherheit
+* **Service-Isolation:** Alle Tools laufen in isolierten Docker-Containern innerhalb der Management-VM.
+* **API-Bridging:** n8n und OpenClaw kommunizieren über das interne Lab-Netzwerk auf den Ports `5678` (n8n), `3000` (OpenClaw) und `11434` (Ollama).
+
+> **Beweis: Erfolgreiches Toolset-Deployment**
+> Das Playbook hat die Container-Struktur erfolgreich initialisiert.
+> ![AI Tools Deployment](./screenshots/11_ai_tools_recap.png)
+
+
+### 11.3 Troubleshooting Erreichbarkeit
+Nach dem ersten Deployment war der Port `3000` (OpenClaw) extern zunächst nicht erreichbar, während n8n weiterhin stabil lief.
+
+**Durchgeführte Fehleranalyse:**
+1. **Dienst-Validierung:** Überprüfung der Docker-Container mittels `docker ps`.
+2. **Port-Freigabe:** Manuelle Öffnung des Ports `3000` in der Host-Firewall (`ufw allow 3000/tcp`).
+3. **Konnektivitäts-Check:** Sicherstellung, dass die Umgebungsvariable `OLLAMA_BASE_URL` auf die korrekte Host-IP zeigt.
+
+> **Status-Check:** > Der AI-Agent Workflow in n8n bleibt davon unberührt (Grün), da die interne Kommunikation zwischen den Nodes unabhängig vom externen Web-Interface funktioniert.
+
+### 11.4 Validierung der KI-Steuerebene
+Nach der Korrektur der Umgebungsvariablen (Sicherheits-Token) konnte die OpenClaw-Instanz erfolgreich stabilisiert werden.
+
+**Ergebnis:**
+* **Container Status:** `Up` (Dauerhaft)
+* **Port Mapping:** Port `3000` ist auf dem Host `ai-ops-01` aktiv.
+* **Erreichbarkeit:** Die Weboberfläche dient nun als primäres Interface für die Interaktion mit dem lokalen `llama3` Modell und den MCP-Tools.

@@ -211,3 +211,24 @@ Nach dem Deployment wurde die Erreichbarkeit des Systems erfolgreich geprüft.
 > ![n8n Setup Page](./screenshots/n8n_live_interface.png)
 
 ---
+## 10. Integration lokaler LLMs (Ollama & Llama3)
+
+Um eine datenschutzkonforme und kostenfreie KI-Verarbeitung zu ermöglichen, wurde das System um eine lokale LLM-Schnittstelle erweitert.
+
+### 10.1 Automatisierte Installation von Ollama
+Die Installation von **Ollama** erfolgte über ein dediziertes Ansible-Playbook (`install_ollama.yml`). Dieses übernimmt:
+* Den Download und die Installation der Ollama-Binary.
+* Die Konfiguration des Systemd-Services für automatischen Start.
+* Den initialen Pull des **Llama3** Modells (ca. 4,7 GB).
+
+### 10.2 n8n AI-Agent Konfiguration
+In n8n wurde ein intelligenter Workflow erstellt, der die Brücke zwischen dem Automatisierungsserver und der lokalen KI schlägt.
+
+**Konfigurations-Details:**
+* **Node-Struktur:** Ein `AI Agent` fungiert als Gehirn, unterstützt durch ein `Ollama Chat Model`.
+* **Konnektivität:** Verbindung über die VM-IP auf Port `11434`.
+* **Modell:** Nutzung von `llama3:latest`.
+
+> **Beweis: Erfolgreicher KI-Durchlauf**
+> Das Bild zeigt den validierten Workflow. Die grünen Indikatoren bestätigen, dass der AI-Agent erfolgreich mit Llama3 kommuniziert und eine Antwort generiert hat.
+> ![n8n AI Success](./screenshots/10_n8n_ai_success.png)

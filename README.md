@@ -177,3 +177,37 @@ Die VM ist nun bereit für das Deployment von n8n und KI-Tools. Der Benutzer `an
 - [x] Ansible Vault & SSH-Key Authentifizierung aktiv.
 - [x] Docker & Docker Compose vollständig einsatzbereit.
 - [ ] **Nächster Schritt:** Start des n8n-Stacks (n8n + Postgres).
+
+## 9. Deployment des AI-Workflow-Systems (n8n)
+
+Das Herzstück der Automatisierung, **n8n**, wurde zusammen mit einer **Postgres-Datenbank** als Container-Stack deployed.
+
+### Stack-Details:
+* **Orchestrierung:** Docker Compose (via Ansible `community.docker` Collection).
+* **Datenhaltung:** Persistente Docker-Volumes für n8n-Daten und Datenbank-Inhalte.
+* **Sicherheit:** Dynamische Injektion von Datenbank-Credentials über Ansible Vault während des Deployments.
+
+> **Beweis: Erfolgreiches Stack-Deployment**
+> Alle Tasks wurden fehlerfrei ausgeführt, der Stack ist produktiv.
+> ![n8n Deployment Success](./screenshots/n8n_deployment_recap.png)
+
+### 9.1 Troubleshooting & Konfigurations-Anpassungen
+Während des Deployments wurden spezifische Anpassungen vorgenommen, um den Stack in einer lokalen Entwicklungsumgebung lauffähig zu machen:
+
+* **YAML-Validierung:** Korrektur der Einrückungen im Docker Compose Template, um den Fehler `additional properties not allowed` zu beheben.
+* **Security-Override:** Da der Zugriff lokal ohne SSL erfolgt, wurde die Variable `N8N_SECURE_COOKIE=false` gesetzt, um den Login über HTTP zu ermöglichen.
+* **Vault-Integration:** Nutzung der Datei `vault_passwords.yml` zur sicheren Injektion der `POSTGRES_PASSWORD` Variable.
+
+### 9.2 Verifizierung des Betriebs
+Nach dem Deployment wurde die Erreichbarkeit des Systems erfolgreich geprüft.
+
+| Komponente | Status | URL / Port |
+| :--- | :--- | :--- |
+| **n8n Frontend** | ✅ Online | `http://192.168.30.20:5678` |
+| **Postgres DB** | ✅ Verbunden | Interner Port 5432 |
+
+> **Beweis: n8n Login-Bereitschaft**
+> Das System ist bereit für die initiale Account-Erstellung und den ersten Workflow-Bau.
+> ![n8n Setup Page](./screenshots/n8n_live_interface.png)
+
+---

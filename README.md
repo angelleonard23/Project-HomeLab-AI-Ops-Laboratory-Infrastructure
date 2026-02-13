@@ -269,3 +269,30 @@ Nach der Korrektur der Umgebungsvariablen (Sicherheits-Token) konnte die OpenCla
 * **Container Status:** `Up` (Dauerhaft)
 * **Port Mapping:** Port `3000` ist auf dem Host `ai-ops-01` aktiv.
 * **Erreichbarkeit:** Die Weboberfläche dient nun als primäres Interface für die Interaktion mit dem lokalen `llama3` Modell und den MCP-Tools.
+
+### 11.5 Fehlerbehebung: Gateway-Authentifizierung & Port-Bindung
+Durch die Analyse der Container-Logs wurde festgestellt, dass die Applikation intern auf Port `18789` lauscht und zwingend einen Sicherheits-Token erwartet. Ohne diesen Token verblieb der Dienst in einer Neustart-Schleife.
+
+**Maßnahmen:**
+* **Token-Implementierung:** Definition der Variable `OPENCLAW_GATEWAY_TOKEN` im Ansible-Playbook.
+* **Netzwerk-Optimierung:** Umstellung auf `network_mode: host`, um Port-Weiterleitungsprobleme zwischen Docker-Bridge und VM-Host zu eliminieren.
+
+### 11.6 Zugriff über Secure Context (SSH-Tunneling)
+Da die Weboberfläche WebSockets nutzt, blockieren moderne Browser den Zugriff über die direkte IP-Adresse aus Sicherheitsgründen ("control ui requires HTTPS or localhost").
+
+**Lösung:**
+Aufbau eines SSH-Tunnels vom Mint-Management-PC:
+`ssh -L 3000:127.0.0.1:3000 angel@192.168.30.20`
+
+**Ergebnis:**
+Der Zugriff über `http://localhost:3000` stellt einen "Secure Context" her, wodurch das Dashboard den Status **Connected** (Grün) anzeigt.
+
+> ![OpenClaw Status: Connected](./img/Openclaw_connected.png)
+
+### 11.7 Integration der Inferenz-Engine (Ollama Node)
+Um Rechenleistung für den Chat bereitzustellen, wurde Ollama als Rechenknoten (Node) im Interface registriert.
+
+* **Node-Konfiguration:** Verbindung via `http://127.0.0.1:11434`.
+* **Validierung:** Erfolgreiche Synchronisation mit dem lokalen `llama3`-Modell. Das System ist nun für den ersten KI-basierten Dialog bereit.
+
+

@@ -272,6 +272,42 @@ Verified via the generated OpenAPI specification:
 
 ---
 
+## 13. Advanced Automation: n8n & Proxmox Integration (As of Feb 23, 2026)
+
+The automation layer is now fully operational. n8n can actively query and control the Proxmox infrastructure through the `mcpo` REST bridge.
+
+### 13.1 Operational Verification (HTTP Request)
+The integration was verified by a successful GET request from n8n to the bridge endpoint.
+
+* **Endpoint:** `http://192.168.30.20:5002/list_vms`
+* **Authentication:** Managed via API Tokens stored in `vault_passwords.yml`.
+* **Result:** n8n successfully retrieved a JSON list of all active and inactive VMs from the AOOSTAR Hypervisor.
+
+> **Proof: Successful Proxmox Query via n8n**
+> The screenshot confirms that n8n is receiving real-time data from the Proxmox API through the AI bridge.
+> ![n8n Proxmox Query Success](./screenshots/n8n_proxmox_list_success.png)
+
+### 13.2 First Production Workflow: VM Status Monitor
+To elevate the lab to an enterprise level, a "Self-Healing" monitor was implemented.
+
+**Workflow Logic:**
+1.  **Schedule Trigger:** Executes every 5 minutes.
+2.  **HTTP Request:** Calls the `/list_vms` endpoint on the `mcpo` bridge.
+3.  **IF-Condition:** Filters the list for critical VMs (e.g., `ai-ops-01`).
+4.  **Action:** If status is not `running`, n8n sends an alert and triggers a `start_vm` command via the bridge.
+
+---
+
+## 14. Current Project Status (Milestone 2 reached)
+- [x] **Full Stack Connectivity:** Open WebUI <-> n8n <-> mcpo <-> Proxmox.
+- [x] **Secure Secret Management:** All API tokens and passwords handled via Ansible Vault.
+- [x] **Live Data Processing:** n8n successfully processes infrastructure data in real-time.
+
+## 15. Roadmap: Next Steps
+
+- [ ] **AI-Driven Incident Response:** Automate pfSense log analysis to trigger VM snapshots during detected attacks.
+- [ ] **Automated Documentation:** Use the AI Agent to write weekly status reports based on VM uptime data.
+- [ ] **GitOps Integration:** Move all custom MCP Python scripts into a local Git repository.
 ## 13. Roadmap: Next Steps
 
 - [ ] **pfSense Integration:** n8n workflows to analyze firewall logs via AI.

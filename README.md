@@ -1,4 +1,4 @@
-# Project HomeLab - AI-Ops Labor Infrastruktur
+`# Project HomeLab - AI-Ops Labor Infrastruktur
 
 Dieses Repository dokumentiert meinen Lern- und Aufbauprozess eines sicherheitsfokussierten HomeLabs
 mit Proxmox VE, pfSense Firewall, Netzwerksegmentierung und Virtualisierung.
@@ -237,62 +237,4 @@ In n8n wurde ein intelligenter Workflow erstellt, der die Brücke zwischen dem A
 ## 11. Enterprise-Upgrade: OpenClaw & Model Context Protocol (MCP)
 
 Um das Lab von einer einfachen Automatisierung zu einer proaktiven KI-Steuerungsebene zu heben, wurden **OpenClaw** als Interface und **MCP-Server** für den Kontext-Zugriff implementiert.
-
-### 11.1 Deployment der Kontroll-Ebene
-Die Bereitstellung erfolgte modular über das Playbook `deploy_ai_tools.yml`. 
-* **OpenClaw:** Fungiert als zentrales Hirn und ist direkt mit der lokalen Ollama-Instanz (`llama3`) verbunden.
-* **MCP Filesystem Server:** Erlaubt der KI den sicheren, Lese-/Schreibzugriff auf definierte Verzeichnisse (`/n8n-stack`), um Konfigurationen selbstständig zu analysieren.
-
-### 11.2 Netzwerkkonfiguration & Sicherheit
-* **Service-Isolation:** Alle Tools laufen in isolierten Docker-Containern innerhalb der Management-VM.
-* **API-Bridging:** n8n und OpenClaw kommunizieren über das interne Lab-Netzwerk auf den Ports `5678` (n8n), `3000` (OpenClaw) und `11434` (Ollama).
-
-> **Beweis: Erfolgreiches Toolset-Deployment**
-> Das Playbook hat die Container-Struktur erfolgreich initialisiert.
-> ![AI Tools Deployment](./screenshots/11_ai_tools_recap.png)
-
-
-### 11.3 Troubleshooting Erreichbarkeit
-Nach dem ersten Deployment war der Port `3000` (OpenClaw) extern zunächst nicht erreichbar, während n8n weiterhin stabil lief.
-
-**Durchgeführte Fehleranalyse:**
-1. **Dienst-Validierung:** Überprüfung der Docker-Container mittels `docker ps`.
-2. **Port-Freigabe:** Manuelle Öffnung des Ports `3000` in der Host-Firewall (`ufw allow 3000/tcp`).
-3. **Konnektivitäts-Check:** Sicherstellung, dass die Umgebungsvariable `OLLAMA_BASE_URL` auf die korrekte Host-IP zeigt.
-
-> **Status-Check:** > Der AI-Agent Workflow in n8n bleibt davon unberührt (Grün), da die interne Kommunikation zwischen den Nodes unabhängig vom externen Web-Interface funktioniert.
-
-### 11.4 Validierung der KI-Steuerebene
-Nach der Korrektur der Umgebungsvariablen (Sicherheits-Token) konnte die OpenClaw-Instanz erfolgreich stabilisiert werden.
-
-**Ergebnis:**
-* **Container Status:** `Up` (Dauerhaft)
-* **Port Mapping:** Port `3000` ist auf dem Host `ai-ops-01` aktiv.
-* **Erreichbarkeit:** Die Weboberfläche dient nun als primäres Interface für die Interaktion mit dem lokalen `llama3` Modell und den MCP-Tools.
-
-### 11.5 Fehlerbehebung: Gateway-Authentifizierung & Port-Bindung
-Durch die Analyse der Container-Logs wurde festgestellt, dass die Applikation intern auf Port `18789` lauscht und zwingend einen Sicherheits-Token erwartet. Ohne diesen Token verblieb der Dienst in einer Neustart-Schleife.
-
-**Maßnahmen:**
-* **Token-Implementierung:** Definition der Variable `OPENCLAW_GATEWAY_TOKEN` im Ansible-Playbook.
-* **Netzwerk-Optimierung:** Umstellung auf `network_mode: host`, um Port-Weiterleitungsprobleme zwischen Docker-Bridge und VM-Host zu eliminieren.
-
-### 11.6 Zugriff über Secure Context (SSH-Tunneling)
-Da die Weboberfläche WebSockets nutzt, blockieren moderne Browser den Zugriff über die direkte IP-Adresse aus Sicherheitsgründen ("control ui requires HTTPS or localhost").
-
-**Lösung:**
-Aufbau eines SSH-Tunnels vom Mint-Management-PC:
-`ssh -L 3000:127.0.0.1:3000 angel@192.168.30.20`
-
-**Ergebnis:**
-Der Zugriff über `http://localhost:3000` stellt einen "Secure Context" her, wodurch das Dashboard den Status **Connected** (Grün) anzeigt.
-
-> ![OpenClaw Status: Connected](./img/Openclaw_connected.png)
-
-### 11.7 Integration der Inferenz-Engine (Ollama Node)
-Um Rechenleistung für den Chat bereitzustellen, wurde Ollama als Rechenknoten (Node) im Interface registriert.
-
-* **Node-Konfiguration:** Verbindung via `http://127.0.0.1:11434`.
-* **Validierung:** Erfolgreiche Synchronisation mit dem lokalen `llama3`-Modell. Das System ist nun für den ersten KI-basierten Dialog bereit.
-
 

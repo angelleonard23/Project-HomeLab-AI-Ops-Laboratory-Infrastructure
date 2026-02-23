@@ -285,7 +285,7 @@ The integration was verified by a successful GET request from n8n to the bridge 
 
 > **Proof: Successful Proxmox Query via n8n**
 > The screenshot confirms that n8n is receiving real-time data from the Proxmox API through the AI bridge.
-> ![n8n Proxmox Query Success](./screenshots/n8n_proxmox_list_success.png)
+> ![n8n Proxmox Query Success](./img/n8n_proxmox_list_success.png)
 
 ### 13.2 First Production Workflow: VM Status Monitor
 To elevate the lab to an enterprise level, a "Self-Healing" monitor was implemented.

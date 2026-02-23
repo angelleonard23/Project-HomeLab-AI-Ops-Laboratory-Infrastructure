@@ -277,7 +277,7 @@ Verified via the generated OpenAPI specification:
 The automation layer is now fully operational. n8n can actively query and control the Proxmox infrastructure through the `mcpo` REST bridge.
 
 ### 13.1 Operational Verification (HTTP Request)
-The integration was verified by a successful GET request from n8n to the bridge endpoint.
+The integration was verified by a successful POST request from n8n to the bridge endpoint.
 
 * **Endpoint:** `http://192.168.30.20:5002/list_vms`
 * **Authentication:** Managed via API Tokens stored in `vault_passwords.yml`.

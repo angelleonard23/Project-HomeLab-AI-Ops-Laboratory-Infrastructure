@@ -230,7 +230,7 @@ An intelligent workflow was created in n8n, acting as the bridge between the aut
 
 > **Proof: Successful AI Execution**
 > The image shows the validated workflow. The green indicators confirm that the AI Agent successfully communicated with Llama3 and generated a response.
-
+> ![n8n AI Success](./img/10_n8n_ai_success.png)
 
 ---
 

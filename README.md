@@ -205,9 +205,6 @@ After deployment, system reachability was successfully verified.
 | **n8n Frontend** | ✅ Online | `http://192.168.30.20:5678` |
 | **Postgres DB** | ✅ Connected | Internal Port 5432 |
 
-> **Proof: n8n Readiness**
-> The system is ready for initial account creation and building the first workflow.
-
 ---
 
 ## 10. Integration of Local LLMs (Ollama & Llama3)

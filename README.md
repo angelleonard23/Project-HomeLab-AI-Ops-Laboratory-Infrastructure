@@ -188,7 +188,7 @@ The heart of the automation, **n8n**, was deployed as a container stack alongsid
 
 > **Proof: Successful Stack Deployment**
 > All tasks were executed without errors; the stack is production-ready.
-> ![n8n Deployment Success](./screenshots/n8n_deployment_recap.png)
+> ![n8n Deployment Success](./img/n8n_deployment_recap.png)
 
 ### 9.1 Troubleshooting & Configuration Adjustments
 During deployment, specific adjustments were made to make the stack operational in a local development environment:
@@ -207,7 +207,7 @@ After deployment, system reachability was successfully verified.
 
 > **Proof: n8n Readiness**
 > The system is ready for initial account creation and building the first workflow.
-> ![n8n Setup Page](./screenshots/n8n_live_interface.png)
+> ![n8n Setup Page](./simg/n8n_live_interface.png)
 
 ---
 
@@ -231,7 +231,7 @@ An intelligent workflow was created in n8n, acting as the bridge between the aut
 
 > **Proof: Successful AI Execution**
 > The image shows the validated workflow. The green indicators confirm that the AI Agent successfully communicated with Llama3 and generated a response.
-> ![n8n AI Success](./screenshots/10_n8n_ai_success.png)
+> ![n8n AI Success](./img/10_n8n_ai_success.png)
 
 ---
 

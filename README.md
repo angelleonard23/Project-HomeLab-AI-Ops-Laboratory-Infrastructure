@@ -1,286 +1,283 @@
-`# Project HomeLab - AI-Ops Labor Infrastruktur
+# Project HomeLab - AI-Ops Laboratory Infrastructure
 
-Dieses Repository dokumentiert meinen Lern- und Aufbauprozess eines sicherheitsfokussierten HomeLabs
-mit Proxmox VE, pfSense Firewall, Netzwerksegmentierung und Virtualisierung.
+This repository documents my learning and development process of a security-focused HomeLab 
+utilizing Proxmox VE, pfSense Firewall, network segmentation, and virtualization.
 
-Ziel ist es, praktische Erfahrung für eine Karriere als Systemadministrator mit Schwerpunkt
-Netzwerk & IT-Security zu sammeln.
+The objective is to gain hands-on experience for a career as a System Administrator with a focus 
+on Networking and IT Security.
 
 ---
 
-## Inhaltsverzeichnis
+## Table of Contents
 
-- [Projektziele](#projektziele)
-- [Hardware & Ausgangslage](#hardware--ausgangslage)
-- [Architekturübersicht](#architekturübersicht)
-- [Netzwerkdesign](#netzwerkdesign)
+- [Project Objectives](#project-objectives)
+- [Hardware & Initial Setup](#hardware--initial-setup)
+- [Architecture Overview](#architecture-overview)
+- [Network Design](#network-design)
 - [Proxmox Installation](#proxmox-installation)
 - [pfSense Firewall](#pfsense-firewall)
-- [Virtuelle Maschinen](#virtuelle-maschinen)
-- [Tests & Validierung](#tests--validierung)
-- [Security Maßnahmen](#security-maßnahmen)
-- [Aktueller Stand](#aktueller-stand)
-- [Nächste Schritte / Roadmap](#nächste-schritte--roadmap)
+- [Virtual Machines](#virtual-machines)
+- [Testing & Validation](#testing--validation)
+- [Security Measures](#security-measures)
+- [Current Status](#current-status)
+- [Roadmap / Next Steps](#roadmap--next-steps)
 
 ---
 
-## Projektziele
+## Project Objectives
 
-- Aufbau eines Proxmox HomeLabs auf Bare Metal
-- Einsatz von pfSense als zentrale Firewall & Router
-- Trennung von Netzwerken mittels VLANs & Subnetzen
-- Vorbereitung einer DMZ für öffentlich erreichbare Services
-- Betrieb von Linux- und Windows-VMs
-- Saubere Dokumentation des Lernprozesses
+- Build a Proxmox HomeLab on Bare Metal.
+- Implement pfSense as the central Firewall & Router.
+- Network isolation using VLANs & Subnets.
+- Implementation of a DMZ for public-facing services.
+- Operation of Linux and Windows VMs.
+- Systematic documentation of the learning process.
+
+---
+
+## Hardware & Initial Setup
+
+| Component | Description |
+|-----------|-------------|
+| Server    | AOOSTAR WTR PRO – AMD Ryzen 7 5825U, 64 GB RAM |
+| Router    | TP-Link Archer AX18 |
+| ISP       | Magenta Gateway |
+| Client    | Linux Mint / Laptop |
 
 ---
 
-## Hardware & Ausgangslage
+## Network Documentation (As of Feb 10, 2026)
 
-| Komponente | Beschreibung |
-|----------|-------------|
-| Server | AOOSTAR WTR PRO – AMD Ryzen 7 5825U, 64 GB RAM |
-| Router | TP-Link Archer AX18 |
-| ISP | Magenta Gateway |
-| Client | Linux Mint / Laptop |
+This project includes the setup of an isolated laboratory environment (VLAN 30) behind a pfSense firewall on a Proxmox host.
 
----
-# Projekt: AI-Ops Labor Infrastruktur
-
-## Netzwerk-Dokumentation (Stand: 10.02.2026)
-
-Dieses Projekt umfasst die Einrichtung einer isolierten Labor-Umgebung (VLAN 30) hinter einer pfSense-Firewall auf einem Proxmox-Host.
-
-### Kern-Komponenten
-* **VM-Name:** `ai-ops-01`
-* **Betriebssystem:** Ubuntu Server
-* **IP-Adresse:** `192.168.30.20`
-* **VLAN-ID:** 30
+### Core Components
+* **VM Name:** `ai-ops-01`
+* **OS:** Ubuntu Server
+* **IP Address:** `192.168.30.20`
+* **VLAN ID:** 30
 * **Gateway:** `192.168.30.1` (pfSense)
 
 ---
 
-## Troubleshooting Prozess: Der Weg zur Konnektivität
+## Troubleshooting Process: Path to Connectivity
 
-Um die Internetverbindung für die VM im VLAN 30 zu etablieren, wurden folgende Fehlerquellen systematisch ausgeschlossen (OSI-Modell Ansatz):
+To establish internet connectivity for the VM in VLAN 30, the following potential issues were systematically excluded using the OSI Model approach:
 
-### 1. Layer 2: Physikalische & Logische Verbindung (Proxmox/VLAN)
-* **Problem:** Die VM konnte das Gateway nicht erreichen.
-* **Lösung:** Sicherstellung, dass die Proxmox-Bridge (`vmbr1`) "VLAN-aware" ist und die VM den korrekten VLAN-Tag (30) besitzt.
-* **Erfolgskontrolle:** `ip neigh` zeigte den Status `REACHABLE` für die MAC-Adresse des Gateways.
+### 1. Layer 2: Physical & Logical Connection (Proxmox/VLAN)
+* **Issue:** The VM could not reach the gateway.
+* **Solution:** Ensured the Proxmox bridge (`vmbr1`) is "VLAN-aware" and the VM is assigned the correct VLAN tag (30).
+* **Validation:** `ip neigh` showed the status `REACHABLE` for the gateway's MAC address.
 
 ### 2. Layer 3: Routing & Firewall (pfSense)
-* **Problem:** Pakete wurden von der pfSense blockiert (`Default deny rule`).
-* **Lösung:** * Erstellung einer **Pass-Regel** auf dem Interface `AIOPS`.
-    * Umstellung der Source von einer spezifischen IP auf **`Any`**, um Fehlkonfigurationen im Subnetz auszuschließen.
-* **Erfolgskontrolle:** Ping auf das Gateway `192.168.30.1` war erfolgreich.
+* **Issue:** Packets were blocked by pfSense (`Default deny rule`).
+* **Solution:** * Created a **Pass Rule** on the `AIOPS` interface.
+    * Changed the source from a specific IP to **`Any`** to rule out subnet misconfigurations.
+* **Validation:** Successful ping to gateway `192.168.30.1`.
 
-### 3. Layer 4 & NAT: Internet-Zugriff (WAN)
-* **Problem:** Pakete kamen an der pfSense an, verließen diese aber nicht korrekt ins Internet.
-* **Lösung:**
-    * Konfiguration des **Outbound NAT** auf dem `WAN`-Interface für das Netz `192.168.30.0/24`.
-    * Deaktivierung von **Static Port**, um Kompatibilität mit dem vorgeschalteten Hauptrouter sicherzustellen.
-* **Erfolgskontrolle:** `ping -n 1.1.1.1` war erfolgreich.
+### 4. Layer 4 & NAT: Internet Access (WAN)
+* **Issue:** Packets reached pfSense but did not exit correctly to the internet.
+* **Solution:**
+    * Configured **Outbound NAT** on the `WAN` interface for the `192.168.30.0/24` network.
+    * Disabled **Static Port** to ensure compatibility with the upstream primary router.
+* **Validation:** `ping -n 1.1.1.1` was successful.
 
-### 4. Application Layer: Namensauflösung (DNS)
-* **Problem:** Internetzugriff per IP möglich, aber `google.com` konnte nicht aufgelöst werden.
-* **Lösung:** Freigabe des Subnetzes `192.168.30.0/24` in den **DNS Resolver Access Lists** der pfSense.
-* **Erfolgskontrolle:** `ping google.com` war erfolgreich.
+### 5. Application Layer: Name Resolution (DNS)
+* **Issue:** Internet access via IP was functional, but `google.com` could not be resolved.
+* **Solution:** Added the `192.168.30.0/24` subnet to the **DNS Resolver Access Lists** in pfSense.
+* **Validation:** `ping google.com` was successful.
 
 ---
 
-## Sensitive Daten & Vault
-Entsprechend der Projektrichtlinie vom 28.01.2026 werden alle sensiblen Variablen und die finale Netzwerk-Topologie in der Datei `vault_passwords.yml` verwaltet.
+## Sensitive Data & Vault
+In accordance with the project policy (Jan 28, 2026), all sensitive variables and the final network topology are managed within the `vault_passwords.yml` file.
 
-## 5. System-Optimierung & Management (Stand: 11.02.2026)
+## 5. System Optimization & Management (As of Feb 11, 2026)
 
-Nachdem die grundlegende Konnektivität hergestellt war, wurde die VM für den professionellen Betrieb in Proxmox und die Automatisierung vorbereitet.
+After establishing basic connectivity, the VM was prepared for professional operation within Proxmox and for automation.
 
 ### QEMU Guest Agent Integration
-Um eine bessere Kommunikation zwischen dem Proxmox-Host und der VM zu ermöglichen (z.B. für sauberes Herunterfahren und IP-Anzeige), wurde der Guest Agent installiert.
-* **Befehl:** `sudo apt install qemu-guest-agent`
-* **Status:** Der Dienst wurde erfolgreich aktiviert, auch wenn Ubuntu ihn als statische Unit verwaltet.
-* **Ergebnis:** Die IP-Adresse der VM ist nun direkt in der Proxmox-Übersicht sichtbar.
+To improve communication between the Proxmox host and the VM (e.g., for graceful shutdowns and IP display), the Guest Agent was installed.
+* **Command:** `sudo apt install qemu-guest-agent`
+* **Status:** Service successfully activated, even though Ubuntu manages it as a static unit.
+* **Result:** The VM's IP address is now directly visible in the Proxmox summary.
 
 > ![Proxmox Guest Agent Status](./img/proxmox_guest_agent.png)
 
 ---
 
-### Statische Netzwerk-Konfiguration (Netplan)
-Um sicherzustellen, dass die VM für die Automatisierung immer unter derselben Adresse erreichbar bleibt, wurde von DHCP auf eine statische Konfiguration umgestellt.
-* **Datei:** `/etc/netplan/50-cloud-init.yaml`
-* **Konfiguration:**
+### Static Network Configuration (Netplan)
+To ensure the VM remains reachable at a consistent address for automation, it was transitioned from DHCP to a static configuration.
+* **File:** `/etc/netplan/50-cloud-init.yaml`
+* **Configuration:**
   * IP: `192.168.30.20/24`
   * Gateway: `192.168.30.1`
   * DNS: `192.168.30.1` (pfSense) & `8.8.8.8`
 
-> **Hier Screenshot einfügen:** (Inhalt der Netplan YAML Datei)
+> **Insert Screenshot here:** (Content of Netplan YAML file)
 > ![Netplan Config](./img/netplan_yaml.png)
 
 ---
 
-## 6. Automatisierung mit Ansible & Vault
+## 6. Automation with Ansible & Vault
 
-Der Zugriff auf das Labor erfolgt nun zentral vom Management-PC (Linux Mint) via Ansible.
+Laboratory access is now managed centrally from the Management PC (Linux Mint) via Ansible.
 
-### Sicherheits-Infrastruktur (SSH & Vault)
-* **SSH-Keys:** Der öffentliche Schlüssel des Management-PCs wurde übertragen (`ssh-copy-id`), um passwortlose Logins zu ermöglichen.
-* **Ansible Vault:** Sensible Daten, wie das `sudo`-Passwort des Users `angel`, werden verschlüsselt in `group_vars/all.yml` gespeichert.
-* **Vault-Automatik:** Über eine lokale `.vault_pass.txt` und die `ansible.cfg` wurde der Workflow so optimiert, dass keine manuelle Passwortabfrage bei der Ausführung von Playbooks mehr nötig ist.
+### Security Infrastructure (SSH & Vault)
+* **SSH Keys:** The public key from the Management PC was deployed (`ssh-copy-id`) to enable passwordless logins.
+* **Ansible Vault:** Sensitive data, such as the `sudo` password for user `angel`, is stored encrypted in `group_vars/all.yml`.
+* **Vault Automation:** Optimized the workflow using a local `.vault_pass.txt` and `ansible.cfg` to eliminate manual password prompts during playbook execution.
 
-> **Hier Screenshot einfügen:** (Erfolgreicher Ansible Ping oder `whoami` Testlauf)
+> **Insert Screenshot here:** (Successful Ansible Ping or `whoami` test run)
 > ![Ansible Success](./img/ansible_test_root.png)
 
-### Automatisierte Wartungs-Playbooks
-Bisher implementierte Workflows:
-1. **`update_system.yml`**: Führt ein vollständiges `apt upgrade` durch.
-2. **`check_reboot.yml`**: Prüft, ob die Datei `/var/run/reboot-required` existiert und startet die VM bei Bedarf sicher neu.
+### Automated Maintenance Playbooks
+Implemented workflows:
+1. **`update_system.yml`**: Performs a full `apt upgrade`.
+2. **`check_reboot.yml`**: Checks for the existence of `/var/run/reboot-required` and securely reboots the VM if necessary.
 
-> **Hier Screenshot einfügen:** (Ansible Playbook Run ohne Fehler)
+> **Insert Screenshot here:** (Ansible Playbook Run without errors)
 > ![Ansible Playbook Run](./img/ansible_playbook_run.png)
 
 ---
 
-## Aktueller Projektstatus (Meilenstein 1 erreicht)
-- [x] Isolierte Netzwerkumgebung (VLAN 30) aktiv.
-- [x] Internetzugriff & DNS über pfSense stabil.
-- [x] VM-Management via Proxmox Guest Agent aktiv.
-- [x] Vollständige Steuerung über Ansible-Automatisierung etabliert.
+## Current Project Status (Milestone 1 reached)
+- [x] Isolated network environment (VLAN 30) active.
+- [x] Internet access & DNS via pfSense stable.
+- [x] VM management via Proxmox Guest Agent active.
+- [x] Full control established via Ansible automation.
 
-## 7. Infrastruktur & Container-Automatisierung (Stand: 11.02.2026)
+## 7. Infrastructure & Container Automation (As of Feb 11, 2026)
 
-Nach der erfolgreichen Netzwerkanbindung wurde die VM `ai-ops-01` vollständig automatisiert als **Docker-Host** provisioniert.
+Following successful network integration, the VM `ai-ops-01` was fully provisioned as a **Docker Host** via automation.
 
-### Meilenstein: Infrastructure as Code (IaC)
-Der gesamte Setup-Prozess wird über Ansible gesteuert. Dies umfasst:
-* **System-Wartung:** Intelligente Prüfung auf notwendige Neustarts (`check_reboot.yml`).
-* **Docker-Stack:** Automatisierte Installation der Docker Engine & Docker Compose (`setup_docker.yml`).
-* **Security:** Sichere Verwaltung von Datenbank-Passwörtern und API-Keys mittels **Ansible Vault**.
+### Milestone: Infrastructure as Code (IaC)
+The entire setup process is managed via Ansible, including:
+* **System Maintenance:** Intelligent reboot checks (`check_reboot.yml`).
+* **Docker Stack:** Automated installation of Docker Engine & Docker Compose (`setup_docker.yml`).
+* **Security:** Secure management of database passwords and API keys using **Ansible Vault**.
 
-> **Beweis 1: Intelligente Systemwartung**
-> Ansible erkennt eigenständig, ob ein Neustart erforderlich ist und überspringt den Task (`skipping`), wenn das System aktuell ist.
+> **Proof 1: Intelligent System Maintenance**
+> Ansible independently detects if a reboot is required and skips the task (`skipping`) if the system is up to date.
 > ![Ansible Reboot Check](./img/ansible_reboot_logic.png)
 
 ---
 
-### Meilenstein: Container-Host Ready
-Die VM ist nun bereit für das Deployment von n8n und KI-Tools. Der Benutzer `angel` wurde berechtigt, Docker-Container ohne `sudo` zu verwalten, was die Sicherheit und den Workflow verbessert.
+### Milestone: Container Host Ready
+The VM is now ready for the deployment of n8n and AI tools. The user `angel` has been authorized to manage Docker containers without `sudo`, improving security and workflow.
 
-> **Beweis 2: Erfolgreiche Docker-Provisionierung**
-> Der Abschlussbericht des Playbooks zeigt die erfolgreiche Einrichtung aller Komponenten und User-Berechtigungen.
+> **Proof 2: Successful Docker Provisioning**
+> The final playbook report shows the successful setup of all components and user permissions.
 > ![Docker Setup Success](./img/docker_setup_recap.png)
 
 ---
 
-## Aktueller Projektstatus
-- [x] Statische IP & Guest-Agent konfiguriert.
-- [x] Ansible Vault & SSH-Key Authentifizierung aktiv.
-- [x] Docker & Docker Compose vollständig einsatzbereit.
-- [ ] **Nächster Schritt:** Start des n8n-Stacks (n8n + Postgres).
+## Current Project Status
+- [x] Static IP & Guest Agent configured.
+- [x] Ansible Vault & SSH Key authentication active.
+- [x] Docker & Docker Compose fully operational.
+- [ ] **Next Step:** Start the n8n stack (n8n + Postgres).
 
-## 9. Deployment des AI-Workflow-Systems (n8n)
+## 9. Deployment of the AI Workflow System (n8n)
 
-Das Herzstück der Automatisierung, **n8n**, wurde zusammen mit einer **Postgres-Datenbank** als Container-Stack deployed.
+The heart of the automation, **n8n**, was deployed as a container stack alongside a **Postgres** database.
 
-### Stack-Details:
-* **Orchestrierung:** Docker Compose (via Ansible `community.docker` Collection).
-* **Datenhaltung:** Persistente Docker-Volumes für n8n-Daten und Datenbank-Inhalte.
-* **Sicherheit:** Dynamische Injektion von Datenbank-Credentials über Ansible Vault während des Deployments.
+### Stack Details:
+* **Orchestration:** Docker Compose (via Ansible `community.docker` collection).
+* **Persistence:** Docker Volumes for n8n data and database content.
+* **Security:** Dynamic injection of DB credentials via Ansible Vault during deployment.
 
-> **Beweis: Erfolgreiches Stack-Deployment**
-> Alle Tasks wurden fehlerfrei ausgeführt, der Stack ist produktiv.
+> **Proof: Successful Stack Deployment**
+> All tasks were executed without errors; the stack is production-ready.
 > ![n8n Deployment Success](./screenshots/n8n_deployment_recap.png)
 
-### 9.1 Troubleshooting & Konfigurations-Anpassungen
-Während des Deployments wurden spezifische Anpassungen vorgenommen, um den Stack in einer lokalen Entwicklungsumgebung lauffähig zu machen:
+### 9.1 Troubleshooting & Configuration Adjustments
+During deployment, specific adjustments were made to make the stack operational in a local development environment:
 
-* **YAML-Validierung:** Korrektur der Einrückungen im Docker Compose Template, um den Fehler `additional properties not allowed` zu beheben.
-* **Security-Override:** Da der Zugriff lokal ohne SSL erfolgt, wurde die Variable `N8N_SECURE_COOKIE=false` gesetzt, um den Login über HTTP zu ermöglichen.
-* **Vault-Integration:** Nutzung der Datei `vault_passwords.yml` zur sicheren Injektion der `POSTGRES_PASSWORD` Variable.
+* **YAML Validation:** Corrected indentation in the Docker Compose template to resolve the `additional properties not allowed` error.
+* **Security Override:** Set `N8N_SECURE_COOKIE=false` to allow local HTTP access without SSL.
+* **Vault Integration:** Used `vault_passwords.yml` for secure injection of the `POSTGRES_PASSWORD` variable.
 
-### 9.2 Verifizierung des Betriebs
-Nach dem Deployment wurde die Erreichbarkeit des Systems erfolgreich geprüft.
+### 9.2 Operational Verification
+After deployment, system reachability was successfully verified.
 
-| Komponente | Status | URL / Port |
+| Component | Status | URL / Port |
 | :--- | :--- | :--- |
 | **n8n Frontend** | ✅ Online | `http://192.168.30.20:5678` |
-| **Postgres DB** | ✅ Verbunden | Interner Port 5432 |
+| **Postgres DB** | ✅ Connected | Internal Port 5432 |
 
-> **Beweis: n8n Login-Bereitschaft**
-> Das System ist bereit für die initiale Account-Erstellung und den ersten Workflow-Bau.
+> **Proof: n8n Readiness**
+> The system is ready for initial account creation and building the first workflow.
 > ![n8n Setup Page](./screenshots/n8n_live_interface.png)
 
 ---
-## 10. Integration lokaler LLMs (Ollama & Llama3)
 
-Um eine datenschutzkonforme und kostenfreie KI-Verarbeitung zu ermöglichen, wurde das System um eine lokale LLM-Schnittstelle erweitert.
+## 10. Integration of Local LLMs (Ollama & Llama3)
 
-### 10.1 Automatisierte Installation von Ollama
-Die Installation von **Ollama** erfolgte über ein dediziertes Ansible-Playbook (`install_ollama.yml`). Dieses übernimmt:
-* Den Download und die Installation der Ollama-Binary.
-* Die Konfiguration des Systemd-Services für automatischen Start.
-* Den initialen Pull des **Llama3** Modells (ca. 4,7 GB).
+To ensure privacy-compliant and cost-free AI processing, the system was expanded with a local LLM interface.
 
-### 10.2 n8n AI-Agent Konfiguration
-In n8n wurde ein intelligenter Workflow erstellt, der die Brücke zwischen dem Automatisierungsserver und der lokalen KI schlägt.
+### 10.1 Automated Ollama Installation
+Installed via a dedicated Ansible playbook (`install_ollama.yml`), handling:
+* Download and installation of the Ollama binary.
+* Systemd service configuration for auto-start.
+* Initial pull of the **Llama3** model (approx. 4.7 GB).
 
-**Konfigurations-Details:**
-* **Node-Struktur:** Ein `AI Agent` fungiert als Gehirn, unterstützt durch ein `Ollama Chat Model`.
-* **Konnektivität:** Verbindung über die VM-IP auf Port `11434`.
-* **Modell:** Nutzung von `llama3:latest`.
+### 10.2 n8n AI Agent Configuration
+An intelligent workflow was created in n8n, acting as the bridge between the automation server and the local AI.
 
-> **Beweis: Erfolgreicher KI-Durchlauf**
-> Das Bild zeigt den validierten Workflow. Die grünen Indikatoren bestätigen, dass der AI-Agent erfolgreich mit Llama3 kommuniziert und eine Antwort generiert hat.
+**Configuration Details:**
+* **Node Structure:** An `AI Agent` acts as the brain, supported by an `Ollama Chat Model`.
+* **Connectivity:** Connected via VM IP on port `11434`.
+* **Model:** Utilizing `llama3:latest`.
+
+> **Proof: Successful AI Execution**
+> The image shows the validated workflow. The green indicators confirm that the AI Agent successfully communicated with Llama3 and generated a response.
 > ![n8n AI Success](./screenshots/10_n8n_ai_success.png)
 
 ---
-## 11. Modernisierung der KI-Steuerebene: Open WebUI & MCP (Stand: 23.02.2026)
 
-Nach intensiven Tests wurde die Architektur von OpenClaw auf **Open WebUI** migriert. Dieser Wechsel ermöglicht eine robustere Integration des **Model Context Protocol (MCP)** und eine stabilere Verbindung zu lokalen Inferenz-Engines.
+## 11. Modernizing the AI Control Plane: Open WebUI & MCP (As of Feb 23, 2026)
 
-### 11.1 Dezentrale Architektur ("The Control Plane")
-Um die Ressourcen des Hypervisors optimal zu nutzen und Management von Workload zu trennen, wurde der Stack geografisch verteilt:
+Following extensive testing, the architecture migrated from OpenClaw to **Open WebUI** for robust **Model Context Protocol (MCP)** integration and stable connection to local inference engines.
 
-* **Management-Zentrale (VM 102 - Mint):** Beherbergt das Frontend (**Open WebUI**) und das Automatisierungs-Backend (**n8n**).
-* **KI-Service-Knoten (ai-ops-01):** Beherbergt die Rechenpower (**Ollama**) und die Schnittstellen-Logik (**MCP-Server & mcpo Bridge**).
+### 11.1 Decentralized Architecture ("The Control Plane")
+Roles are distributed to optimize resources and isolate the management layer:
+* **Management Hub (VM 102 - Mint):** Hosts the frontend (**Open WebUI**) and automation engine (**n8n**).
+* **AI Service Node (ai-ops-01):** Hosts the inference engine (**Ollama**) and interface logic (**MCP Server & mcpo Bridge**).
 
-### 11.2 Model Context Protocol (MCP) & Bridge-Technologie
-Um der KI (Llama3) direkten Zugriff auf die Proxmox-Infrastruktur zu geben, wurde ein MCP-Server auf Basis von `FastMCP` implementiert.
-
-* **Die Herausforderung:** Open WebUI erwartet eine standardisierte OpenAPI/REST-Schnittstelle, während MCP nativ über SSE (Server-Sent Events) kommuniziert.
-* **Die Lösung:** Einsatz der **`mcpo` Bridge**. Diese startet das MCP-Python-Skript als Subprozess (stdio) und übersetzt die Tools in eine dynamische `openapi.json` auf Port `5002`.
-* **Security-Patch:** Da FastMCP restriktive Host-Checks durchführt, wurde ein Python-Monkey-Patch implementiert, der die `dns_rebinding_protection` deaktiviert. Dies erlaubt den Zugriff aus dem Management-VLAN (Mint-VM) auf den Docker-Host.
-
-
+### 11.2 Model Context Protocol (MCP) & Bridge Technology
+Implemented a `FastMCP`-based server to grant the AI direct access to Proxmox infrastructure.
+* **The Challenge:** Open WebUI requires a standard OpenAPI/REST interface, while MCP communicates natively via SSE (Server-Sent Events).
+* **The Solution:** Implementation of the **`mcpo` Bridge**. This runs the MCP Python script as a stdio subprocess and translates tools into a dynamic `openapi.json` on port `5002`.
+* **Security Patch:** Implemented a Python monkey-patch to disable `dns_rebinding_protection` in FastMCP, allowing cross-VLAN access from the Management VM to the Docker host.
 
 ---
 
-## 12. Finaler AI-Ops Stack: Status & Validierung
+## 12. Final AI-Ops Stack: Status & Validation
 
-Der gesamte Stack ist nun vollständig über Ansible (`deploy_ai_brain.yml`) provisioniert und nutzt verschlüsselte Secrets aus der `vault_passwords.yml`.
+Provisioned entirely via Ansible (`deploy_ai_brain.yml`) using encrypted secrets from `vault_passwords.yml`.
 
-### 12.1 Komponenten-Matrix
-| Dienst | Port | Host | Rolle |
+### 12.1 Component Matrix
+| Service | Port | Host | Role |
 | :--- | :--- | :--- | :--- |
-| **Open WebUI** | 8080 | Mint-VM (102) | Zentrales Chat-Interface & Tool-Nutzung |
-| **n8n** | 5678 | Mint-VM (102) | Event-Handling & Workflow-Automatisierung |
-| **mcpo (Bridge)** | 5002 | ai-ops-01 | REST-Übersetzer für Proxmox-Tools |
-| **Ollama** | 11434 | ai-ops-01 | Lokale LLM-Inferenz (Llama3) |
-| **Proxmox API** | 8006 | Host (WTR Pro) | Ziel-Infrastruktur für die KI-Steuerung |
+| **Open WebUI** | 8080 | Mint-VM (102) | Primary Chat Interface & Tool Hub |
+| **n8n** | 5678 | Mint-VM (102) | Event-Handling & Workflow Automation |
+| **mcpo (Bridge)** | 5002 | ai-ops-01 | REST Translator for Proxmox Tools |
+| **Ollama** | 11434 | ai-ops-01 | Local LLM Inference (Llama3) |
+| **Proxmox API** | 8006 | Host (WTR Pro) | Target Infrastructure for AI Control |
 
-### 12.2 Validierung der Konnektivität
-Die Funktionalität der "Bridge" wurde durch Abfrage der generierten Spezifikation verifiziert:
+### 12.2 Connectivity Validation
+Verified via the generated OpenAPI specification:
 `curl http://192.168.1.10:5002/openapi.json | python3 -m json.tool`
 
-**Ergebnis:** Die KI verfügt nun über "Hände" im Homelab. Sie kann autonom:
-1.  VM-Listen vom Proxmox-Host abrufen.
-2.  Den Ressourcenstatus (CPU/RAM) der Nodes analysieren.
-3.  VMs starten oder stoppen basierend auf natürlicher Sprache.
+**Result:** The AI now has "hands" within the HomeLab. It can autonomously:
+1. Fetch VM lists from the Proxmox host.
+2. Analyze resource utilization (CPU/RAM) across nodes.
+3. Start/Stop VMs based on natural language commands.
 
 ---
 
-## 13. Roadmap: Nächste Schritte
+## 13. Roadmap: Next Steps
 
-- [ ] **pfSense Integration:** n8n-Workflows zur Analyse von Firewall-Logs durch die KI.
-- [ ] **Self-Healing:** Automatisierte Snapshots vor kritischen KI-Aktionen.
-- [ ] **GitOps:** Versionierung aller MCP-Skripte und Ansible-Playbooks in einem lokalen Repository.
+- [ ] **pfSense Integration:** n8n workflows to analyze firewall logs via AI.
+- [ ] **Self-Healing:** Automated snapshots prior to critical AI-triggered actions.
+- [ ] **GitOps:** Versioning all MCP scripts and Ansible playbooks in a local repository.

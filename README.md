@@ -234,7 +234,53 @@ In n8n wurde ein intelligenter Workflow erstellt, der die Brücke zwischen dem A
 > ![n8n AI Success](./screenshots/10_n8n_ai_success.png)
 
 ---
-## 11. Enterprise-Upgrade: OpenClaw & Model Context Protocol (MCP)
+## 11. Modernisierung der KI-Steuerebene: Open WebUI & MCP (Stand: 23.02.2026)
 
-Um das Lab von einer einfachen Automatisierung zu einer proaktiven KI-Steuerungsebene zu heben, wurden **OpenClaw** als Interface und **MCP-Server** für den Kontext-Zugriff implementiert.
+Nach intensiven Tests wurde die Architektur von OpenClaw auf **Open WebUI** migriert. Dieser Wechsel ermöglicht eine robustere Integration des **Model Context Protocol (MCP)** und eine stabilere Verbindung zu lokalen Inferenz-Engines.
 
+### 11.1 Dezentrale Architektur ("The Control Plane")
+Um die Ressourcen des Hypervisors optimal zu nutzen und Management von Workload zu trennen, wurde der Stack geografisch verteilt:
+
+* **Management-Zentrale (VM 102 - Mint):** Beherbergt das Frontend (**Open WebUI**) und das Automatisierungs-Backend (**n8n**).
+* **KI-Service-Knoten (ai-ops-01):** Beherbergt die Rechenpower (**Ollama**) und die Schnittstellen-Logik (**MCP-Server & mcpo Bridge**).
+
+### 11.2 Model Context Protocol (MCP) & Bridge-Technologie
+Um der KI (Llama3) direkten Zugriff auf die Proxmox-Infrastruktur zu geben, wurde ein MCP-Server auf Basis von `FastMCP` implementiert.
+
+* **Die Herausforderung:** Open WebUI erwartet eine standardisierte OpenAPI/REST-Schnittstelle, während MCP nativ über SSE (Server-Sent Events) kommuniziert.
+* **Die Lösung:** Einsatz der **`mcpo` Bridge**. Diese startet das MCP-Python-Skript als Subprozess (stdio) und übersetzt die Tools in eine dynamische `openapi.json` auf Port `5002`.
+* **Security-Patch:** Da FastMCP restriktive Host-Checks durchführt, wurde ein Python-Monkey-Patch implementiert, der die `dns_rebinding_protection` deaktiviert. Dies erlaubt den Zugriff aus dem Management-VLAN (Mint-VM) auf den Docker-Host.
+
+
+
+---
+
+## 12. Finaler AI-Ops Stack: Status & Validierung
+
+Der gesamte Stack ist nun vollständig über Ansible (`deploy_ai_brain.yml`) provisioniert und nutzt verschlüsselte Secrets aus der `vault_passwords.yml`.
+
+### 12.1 Komponenten-Matrix
+| Dienst | Port | Host | Rolle |
+| :--- | :--- | :--- | :--- |
+| **Open WebUI** | 8080 | Mint-VM (102) | Zentrales Chat-Interface & Tool-Nutzung |
+| **n8n** | 5678 | Mint-VM (102) | Event-Handling & Workflow-Automatisierung |
+| **mcpo (Bridge)** | 5002 | ai-ops-01 | REST-Übersetzer für Proxmox-Tools |
+| **Ollama** | 11434 | ai-ops-01 | Lokale LLM-Inferenz (Llama3) |
+| **Proxmox API** | 8006 | Host (WTR Pro) | Ziel-Infrastruktur für die KI-Steuerung |
+
+### 12.2 Validierung der Konnektivität
+Die Funktionalität der "Bridge" wurde durch Abfrage der generierten Spezifikation verifiziert:
+`curl http://192.168.1.10:5002/openapi.json | python3 -m json.tool`
+
+**Ergebnis:** Die KI verfügt nun über "Hände" im Homelab. Sie kann autonom:
+1.  VM-Listen vom Proxmox-Host abrufen.
+2.  Den Ressourcenstatus (CPU/RAM) der Nodes analysieren.
+3.  VMs starten oder stoppen basierend auf natürlicher Sprache.
+
+---
+
+## 13. Roadmap: Nächste Schritte
+
+- [ ] **pfSense Integration:** n8n-Workflows zur Analyse von Firewall-Logs durch die KI.
+- [ ] **Self-Healing:** Automatisierte Snapshots vor kritischen KI-Aktionen.
+- [ ] **GitOps:** Versionierung aller MCP-Skripte und Ansible-Playbooks in einem lokalen Repository.

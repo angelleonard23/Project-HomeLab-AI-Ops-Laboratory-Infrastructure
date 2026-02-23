@@ -207,7 +207,6 @@ After deployment, system reachability was successfully verified.
 
 > **Proof: n8n Readiness**
 > The system is ready for initial account creation and building the first workflow.
-> ![n8n Setup Page](./simg/n8n_live_interface.png)
 
 ---
 

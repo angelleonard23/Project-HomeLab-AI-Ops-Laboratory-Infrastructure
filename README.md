@@ -231,7 +231,7 @@ An intelligent workflow was created in n8n, acting as the bridge between the aut
 
 ---
 
-## 11. Modernizing the AI Control Plane: Open WebUI & MCP (As of Feb 23, 2026)
+## 11. Modernizing the AI Control Plane: Open WebUI & MCP 
 
 Following extensive testing, the architecture migrated from OpenClaw to **Open WebUI** for robust **Model Context Protocol (MCP)** integration and stable connection to local inference engines.
 
@@ -272,7 +272,7 @@ Verified via the generated OpenAPI specification:
 
 ---
 
-## 13. Advanced Automation: AI-Ops Monitoring (Status: 2026-02-24)
+## 13. Advanced Automation: AI-Ops Monitoring
 
 The automation layer has reached full maturity. The system now autonomously monitors the Proxmox infrastructure and reports status changes via Telegram using local AI.
 

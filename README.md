@@ -297,8 +297,18 @@ During implementation, we identified that n8n’s default JSON serializer has li
   "model": "llama3",
   "stream": false,
   "prompt": "Analysiere diese Proxmox VMs auf Deutsch und gib einen kurzen Statusbericht: {{ $input.all().map(i => i.json.node + ' VM ' + i.json.name + ' ist ' + i.json.status).join(', ') }}"
-```
 }
+```
+
+### 13.3 Notification & Formatting (Telegram)
+To ensure professional readability in the Telegram client, a Regex-based string replacement was implemented to handle the AI's newline characters (`\n`).
+
+**Telegram Expression:**
+`{{ $json.response.replace(/\\n/g, '\n') }}`
+
+> **Proof: Successful Proxmox Analysis via Telegram**
+> The screenshot confirms that Llama3 correctly identifies "stopped" VMs (e.g., `DC-01`, `CL-01-WIN11`) and delivers a structured report to the "Homelab Monitor" bot.
+> ![n8n Telegram AI Success](./img/telegram_homelab_monitor.png)
 ## 14. Current Project Status (Milestone 2 reached)
 - [x] **Full Stack Connectivity:** Open WebUI <-> n8n <-> mcpo <-> Proxmox.
 - [x] **Secure Secret Management:** All API tokens and passwords handled via Ansible Vault.

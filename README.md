@@ -308,7 +308,7 @@ To ensure professional readability in the Telegram client, a Regex-based string 
 
 > **Proof: Successful Proxmox Analysis via Telegram**
 > The screenshot confirms that Llama3 correctly identifies "stopped" VMs (e.g., `DC-01`, `CL-01-WIN11`) and delivers a structured report to the "Homelab Monitor" bot.
-> ![n8n Telegram AI Success](./img/telegram_homelab_monitor.png)
+> ![n8n Telegram AI Success](./img/telegram_homelab.png)
 ## 14. Current Project Status (Milestone 2 reached)
 - [x] **Full Stack Connectivity:** Open WebUI <-> n8n <-> mcpo <-> Proxmox.
 - [x] **Secure Secret Management:** All API tokens and passwords handled via Ansible Vault.

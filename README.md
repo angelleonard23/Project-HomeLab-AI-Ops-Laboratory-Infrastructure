@@ -272,32 +272,33 @@ Verified via the generated OpenAPI specification:
 
 ---
 
-## 13. Advanced Automation: n8n & Proxmox Integration (As of Feb 23, 2026)
+## 13. Advanced Automation: AI-Ops Monitoring (Status: 2026-02-24)
 
-The automation layer is now fully operational. n8n can actively query and control the Proxmox infrastructure through the `mcpo` REST bridge.
+The automation layer has reached full maturity. The system now autonomously monitors the Proxmox infrastructure and reports status changes via Telegram using local AI.
 
-### 13.1 Operational Verification (HTTP Request)
-The integration was verified by a successful POST request from n8n to the bridge endpoint.
+### 13.1 Full-Loop AI-Ops Architecture
+The integration was verified by a successful end-to-end execution, transforming raw JSON data into human-readable intelligence.
 
 * **Endpoint:** `http://192.168.30.20:5002/list_vms`
-* **Authentication:** Managed via API Tokens stored in `vault_passwords.yml`.
-* **Result:** n8n successfully retrieved a JSON list of all active and inactive VMs from the AOOSTAR Hypervisor.
+* **Method:** `POST` (Utilizing Raw Body for custom data mapping)
+* **AI Engine:** Ollama / Llama3 (Local Inference)
+* **Result:** n8n retrieves the VM list, feeds it into the LLM, and delivers a German status report via Telegram.
 
-> **Proof: Successful Proxmox Query via n8n**
-> The screenshot confirms that n8n is receiving real-time data from the Proxmox API through the AI bridge.
-> ![n8n Proxmox Query Success](./img/n8n_proxmox_list_success.png)
 
-### 13.2 First Production Workflow: VM Status Monitor
-To elevate the lab to an enterprise level, a "Self-Healing" monitor was implemented.
 
-**Workflow Logic:**
-1.  **Schedule Trigger:** Executes every 5 minutes.
-2.  **HTTP Request:** Calls the `/list_vms` endpoint on the `mcpo` bridge.
-3.  **IF-Condition:** Filters the list for critical VMs (e.g., `ai-ops-01`).
-4.  **Action:** If status is not `running`, n8n sends an alert and triggers a `start_vm` command via the bridge.
+### 13.2 Technical Deep Dive: The n8n-to-Ollama Fix
+During implementation, we identified that n8n’s default JSON serializer has limitations with complex mappings. 
 
----
+**The Solution:** We switched the HTTP Request to **Body Content Type: Raw** with `application/json` headers. This allowed us to use a JavaScript `.map()` expression to pre-format the VM data for the AI.
 
+**Optimized Prompt Logic:**
+```json
+{
+  "model": "llama3",
+  "stream": false,
+  "prompt": "Analysiere diese Proxmox VMs auf Deutsch und gib einen kurzen Statusbericht: {{ $input.all().map(i => i.json.node + ' VM ' + i.json.name + ' ist ' + i.json.status).join(', ') }}"
+```
+}
 ## 14. Current Project Status (Milestone 2 reached)
 - [x] **Full Stack Connectivity:** Open WebUI <-> n8n <-> mcpo <-> Proxmox.
 - [x] **Secure Secret Management:** All API tokens and passwords handled via Ansible Vault.

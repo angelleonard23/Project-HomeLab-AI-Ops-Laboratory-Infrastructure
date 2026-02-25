@@ -356,29 +356,38 @@ The laboratory infrastructure is now fully "AI-Aware" and consists of the follow
 | **syslog-ng** | `5141` | Central Security Log Collector for pfSense |
 
 ---
+---
 
-## 16. Current Project Status (Milestone 3 Reached)
-- [x] **Proxmox Infrastructure Monitor:** Active (Llama3 + Telegram).
-- [x] **pfSense Security Monitor:** Active (Syslog-ng + Llama3 + Telegram).
-- [x] **Centralized AI Control:** All services integrated into a single Docker-stack for reproducibility.
+## 16. Infrastructure as Code: The "AI Brain" Playbook
 
-## 17. Roadmap: Next Steps
+To ensure 100% reproducibility and disaster recovery, the entire AI-Ops stack has been migrated to a centralized Ansible configuration.
 
-- [ ] **Advanced Alerting:** Refine AI prompts to only trigger Telegram alerts for high-severity events (e.g., successful unauthorized login attempts).
-- [ ] **Grafana Dashboard:** Visualizing firewall blocks and VM uptime on a real-time dashboard.
-- [ ] **Ansible Refactoring:** Documenting the entire container stack in the main Ansible playbook for 1-click redeployment. 
-## 14. Current Project Status (Milestone 2 reached)
-- [x] **Full Stack Connectivity:** Open WebUI <-> n8n <-> mcpo <-> Proxmox.
-- [x] **Secure Secret Management:** All API tokens and passwords handled via Ansible Vault.
-- [x] **Live Data Processing:** n8n successfully processes infrastructure data in real-time.
+### 16.1 Automated Deployment (deploy_ai_brain.yml)
+The manual container setups were refactored into an idempotent Ansible playbook. This allows for a one-click redeployment of the complete infrastructure on `ai-ops-01`.
 
-## 15. Roadmap: Next Steps
+**Key Tasks Automated:**
+* **Directory Structure:** Creation of persistent data paths for logs and workflows.
+* **Component Deployment:**
+    * **Open WebUI:** Central AI interface.
+    * **Proxmox MCP & mcpo Bridge:** Infrastructure API connectors.
+    * **Syslog-ng:** Centralized log collector for pfSense security audits.
+    * **n8n Stack:** The automation engine orchestrating the workflows.
+* **Security:** Integrated `ansible-vault` using `vault_passwords.yml` for sensitive credential injection.
 
-- [ ] **AI-Driven Incident Response:** Automate pfSense log analysis to trigger VM snapshots during detected attacks.
-- [ ] **Automated Documentation:** Use the AI Agent to write weekly status reports based on VM uptime data.
-- [ ] **GitOps Integration:** Move all custom MCP Python scripts into a local Git repository.
-## 13. Roadmap: Next Steps
+> **Proof: Successful Infrastructure Orchestration**
+> The terminal output confirms that all 8 tasks executed successfully (ok=8), verifying that the AI-Ops environment is now fully managed via Infrastructure as Code (IaC).
+> ![Ansible Deployment Success](./img/ansible_deployment_success.png)
 
-- [ ] **pfSense Integration:** n8n workflows to analyze firewall logs via AI.
-- [ ] **Self-Healing:** Automated snapshots prior to critical AI-triggered actions.
-- [ ] **GitOps:** Versioning all MCP scripts and Ansible playbooks in a local repository.
+---
+
+## 19. Milestone 4 Reached: Full Stack Automation
+- [x] **IaC Transition:** Manual Docker commands replaced by Ansible Playbook.
+- [x] **Service Orchestration:** Verified deployment of all 5 core AI-Ops services.
+- [x] **Data Persistence:** Volume mounts and log paths correctly mapped via automation.
+
+## 20. Roadmap: Future Innovations
+With the foundation now fully automated and reproducible, the next phase focuses on:
+* **Smart Alerting:** Implementing state-aware logic in n8n to minimize Telegram noise.
+* **Grafana Integration:** Adding a visualization layer for security events and VM metrics.
+* **Self-Healing:** Enabling AI-triggered automated VM restarts for critical infrastructure.
+

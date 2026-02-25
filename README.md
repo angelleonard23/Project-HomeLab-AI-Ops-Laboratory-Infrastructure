@@ -380,6 +380,35 @@ The manual container setups were refactored into an idempotent Ansible playbook.
 
 ---
 
+## 19. Network Security: Hardening the AI-Ops Node
+
+After the successful deployment via Ansible, the network layer was hardened to prevent unauthorized access to the AI services, as all containers were binding to `0.0.0.0`.
+
+### 19.1 Threat Analysis & Port Mapping
+A system audit revealed several exposed services on `ai-ops-01` (`192.168.30.20`):
+* **Port 8080:** Open WebUI (Cleartext)
+* **Port 5678:** n8n (Cleartext)
+* **Port 11434:** Ollama API
+* **Port 5141:** Syslog-ng (UDP/TCP)
+
+### 19.2 Zero Trust Firewall Rules (pfSense)
+To secure these services, a strict "Default Block" policy was implemented on the pfSense firewall for the AIOPS VLAN.
+
+| Order | Action | Source | Destination | Ports | Description |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 1 | **PASS** | `10.0.10.52` (Mint) | `192.168.30.20` | 5678, 8080 | Mgmt Access |
+| 2 | **PASS** | `192.168.30.20` | `Any` | Any | Outbound Updates |
+| 3 | **BLOCK**| `Any` | `192.168.30.20` | Any | Security Baseline |
+
+
+
+### 19.3 Verification
+* **Success:** Access via Management VM (`10.0.10.52`) remains fully functional.
+* **Security:** Unauthorized access attempts from other VLANs are successfully dropped by Rule 3.
+
+> **Note:** The order of rules is critical. The "Allow" rule for the Management VM must precede the "Block All" rule to ensure administrative access is not severed.
+
+
 ## 19. Milestone 4 Reached: Full Stack Automation
 - [x] **IaC Transition:** Manual Docker commands replaced by Ansible Playbook.
 - [x] **Service Orchestration:** Verified deployment of all 5 core AI-Ops services.

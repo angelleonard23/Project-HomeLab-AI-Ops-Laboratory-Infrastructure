@@ -436,6 +436,28 @@ A dedicated "Backup-Agent" workflow has been designed:
 
 > **Reliability Note:** Hardware is temporary, but the "Brain" (the logic) is now permanent and recoverable on any new Linux node within minutes using the Ansible Playbook.
 
+### 20.4 Mission-Critical: Docker Volume Backups
+
+While GitHub stores the configuration files (Infrastructure as Code), the actual state of the AI-Ops node—including n8n database, user credentials, and active workflow executions—resides within **Docker Volumes**. A hardware failure or container corruption would lead to a total loss of these operational data points if not backed up separately.
+
+#### Backup Strategy for Volumes
+To ensure full recovery, the persistent data must be extracted from the Docker environment:
+
+* **Target Volumes:** Focus on `/var/lib/docker/volumes/` (specifically for `n8n_data`, `syslog_data`, and `ollama_configs`).
+* **Mechanism:** Automated "Snapshot-to-Archive" process using the `docker run --rm --volumes-from` method to create compressed `.tar.gz` snapshots.
+* **Storage Location:** Backups are first stored locally in `/home/angel/backups/` and then synced to an off-site target (S3, NAS, or encrypted Cloud) to follow the **3-2-1 Backup Rule**.
+
+#### Recovery Procedure
+The recovery is integrated into the Ansible lifecycle:
+1. **Re-deploy Stack:** Ansible recreates the containers and empty volumes.
+2. **Data Restoration:** The latest `.tar.gz` snapshot is extracted back into the volumes before the services start.
+3. **Verification:** System integrity check to ensure n8n recognizes all previous workflows and API keys.
+
+
+
+> **Security Warning:** Docker volume backups contain unencrypted secrets (like your Binance API keys or Telegram tokens). These archives **MUST** be encrypted (e.g., via `gpg` or `ansible-vault`) before being moved to any cloud-based or external storage.
+
+---
 ---
 
 ## 22. Milestone 5 Reached: Resilient AI Operations

@@ -458,6 +458,43 @@ The recovery is integrated into the Ansible lifecycle:
 > **Security Warning:** Docker volume backups contain unencrypted secrets (like your Binance API keys or Telegram tokens). These archives **MUST** be encrypted (e.g., via `gpg` or `ansible-vault`) before being moved to any cloud-based or external storage.
 
 ---
+## 21. Real-Time Monitoring: Prometheus & Grafana (Status: 2026-02-26)
+
+To ensure the stability and performance of the AI-Ops infrastructure, a professional monitoring stack was deployed. This allows for real-time tracking of system resources and service health.
+
+### 21.1 Monitoring Stack Components
+The stack is deployed via Docker Compose and consists of three core services:
+* **Prometheus:** The time-series database that collects metrics.
+* **Grafana:** The visualization platform for dashboards.
+* **Node-Exporter:** A helper service that exports hardware metrics (CPU, RAM, Disk) from the host.
+
+### 21.2 Network Hardening (pfSense Aliases)
+To allow the Management VM (Mint) access to the new monitoring services while maintaining a strict firewall policy, a **Port Alias** was created in pfSense.
+
+* **Alias Name:** `AI_Stack_Ports`
+* **Included Ports:** `3000` (Grafana), `5678` (n8n), `8080` (Open WebUI), `5001/5002` (MCP/Bridge).
+* **Rule Logic:** The existing "Pass" rule for the Mint VM was updated to use this alias as the destination, ensuring all AI services are reachable through a single, manageable rule.
+
+### 21.3 Dashboard Configuration
+Instead of building views from scratch, the **Node Exporter Full (ID: 1860)** dashboard was imported.
+
+* **Data Source:** Prometheus (connected via `http://127.0.0.1:9090`).
+* **Metrics Tracked:** CPU Load, Memory Usage, Disk I/O, and Network Traffic.
+
+> ![Grafana Dashboard](./img/grafana_dashboard.png)
+
+### 21.4 Automated Deployment & Persistence
+The monitoring stack was added to the main Ansible lifecycle to ensure it is part of the automated "AI Brain" deployment.
+
+```bash
+# Adding the monitoring stack to the Ansible Playbook
+cat >> deploy_ai_brain.yml << 'EOF'
+    - name: Deploy Monitoring Stack
+      community.docker.docker_compose_v2:
+        project_name: monitoring
+        project_src: /home/angel/ai-stack/monitoring
+        state: present
+EOF
 ---
 
 ## 22. Milestone 5 Reached: Resilient AI Operations

@@ -408,6 +408,41 @@ To secure these services, a strict "Default Block" policy was implemented on the
 
 > **Note:** The order of rules is critical. The "Allow" rule for the Management VM must precede the "Block All" rule to ensure administrative access is not severed.
 
+## 20. Disaster Recovery & Configuration Backup (Status: 2026-02-26)
+
+To protect the "AI-Ops Brain" from hardware failure or data corruption, a multi-tier backup strategy has been implemented, focusing on Version Control (Git) and encrypted off-site storage.
+
+### 20.1 Target Components for Backup
+The following critical components are prioritized for the backup routine:
+* **Ansible Repository:** All playbooks (`deploy_ai_brain.yml`), roles, and inventory files.
+* **n8n Workflows:** Exported JSON files of the Proxmox, pfSense, and Trading pipelines.
+* **Configuration Files:** Docker-compose files, `syslog-ng` configs, and the `vault_passwords.yml` (encrypted).
+* **Node Data:** Persistent volumes of the `mcpo` bridge and custom Python scripts.
+
+### 20.2 Git-Based Version Control (GitHub)
+The infrastructure is now managed as **Infrastructure as Code (IaC)**. 
+
+* **Repository:** Private GitHub repository for configuration files.
+* **Automation:** An n8n workflow or a cron-based Ansible task periodically pushes the latest verified configurations to GitHub.
+* **Security:** Sensitive data is strictly handled via `ansible-vault` to ensure no plain-text passwords ever reach the remote repository.
+
+
+
+### 20.3 Automated Backup Workflow (n8n)
+A dedicated "Backup-Agent" workflow has been designed:
+1. **Trigger:** Daily at 03:00 AM.
+2. **Action:** Exports all active n8n workflows via the n8n API.
+3. **Storage:** Commits the exports to the local Git directory and performs a `git push` to the encrypted off-site target.
+
+> **Reliability Note:** Hardware is temporary, but the "Brain" (the logic) is now permanent and recoverable on any new Linux node within minutes using the Ansible Playbook.
+
+---
+
+## 22. Milestone 5 Reached: Resilient AI Operations
+- [x] **IaC Persistence:** Ansible stack is tracked in Git.
+- [x] **Workflow Portability:** n8n logic is exported and backed up.
+- [x] **Off-site Protection:** Automated sync to private GitHub repository.
+
 
 ## 19. Milestone 4 Reached: Full Stack Automation
 - [x] **IaC Transition:** Manual Docker commands replaced by Ansible Playbook.

@@ -499,28 +499,33 @@ EOF
 ```
 ---
 
-## 26. Intrusion Prevention System (IPS) Expansion
+## 22. IPS Expansion: Internal VLAN Protection
 
-After stabilizing the WAN interface, the Suricata deployment was extended to cover the internal AIOPS network. Based on hardware compatibility and stability tests, the **Legacy Mode** was chosen for blocking operations.
+To complete the "AI-Ops" security perimeter, the **AIOPS interface** (VLAN 30) has been integrated into Suricata to prevent lateral movement within the lab environment.
 
-### 26.1 Interface Strategy
-The goal is a multi-layered defense:
-* **WAN (vtnet0):** Filters incoming traffic from the internet before it hits the internal network.
-* **AIOPS (VLAN30):** Monitors and protects the internal AI-Ops node from lateral movement within the lab.
+### 22.1 Strategy & Configuration
+* **Mode:** Legacy Mode (selected for maximum stability with virtualized network drivers).
+* **Coverage:** Multi-layered defense combining WAN (perimeter) and AIOPS (internal stack).
+* **Blocking:** "Block Offenders" is enabled to immediately drop malicious IPs at the firewall level.
 
-### 26.2 Implementation: Adding AIOPS Interface
-To include the internal network in the security monitoring:
-1. **Add Interface:** Navigation to **Services → Suricata → Interfaces → Add**.
-2. **Assignment:** Selected `AIOPS` as the interface.
-3. **Blocking Mode:** Set to `Legacy Mode`.
-4. **Log Settings:** Enabled `Send Alerts to System Log` to ensure n8n can process internal security events via the `syslog-ng` pipeline.
-
+### 22.2 Security Pipeline & Logging
+Integration into the n8n AI-Security Analyst is achieved through enhanced logging parameters:
+* **Syslog Forwarding:** Enabled (`LOCAL1/NOTICE`) for the n8n/syslog-ng pipeline.
+* **HTTP Inspection:** Active for granular tracking of web-based attack vectors.
+* **IaC Validation:** The entire monitoring stack deployment was verified via Ansible (ok=8).
 
 
-## 22. Milestone 5 Reached: Resilient AI Operations
-- [x] **IaC Persistence:** Ansible stack is tracked in Git.
-- [x] **Workflow Portability:** n8n logic is exported and backed up.
-- [x] **Off-site Protection:** Automated sync to private GitHub repository.
+
+### 22.3 Troubleshooting & Activation
+* **Initialization:** The interface was manually bound via `+ Add` to ensure visibility in Alert/Block dropdown menus.
+* **Status Check:** Both WAN and AIOPS interfaces are verified active (green checkmark) and operational.
+
+### 22.4 Validation Checklist
+- [x] **AIOPS Monitoring:** Interface successfully initialized and started.
+- [x] **Alert Visibility:** AIOPS is selectable in the Alert and Block dropdown menus.
+- [x] **Log Stream:** Security events are flowing from the internal VLAN to the central syslog-ng collector. [cite: eigene Analyse
+
+
 
 
 ## 19. Milestone 4 Reached: Full Stack Automation

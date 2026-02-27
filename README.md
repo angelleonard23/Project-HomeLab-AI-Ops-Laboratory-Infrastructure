@@ -495,7 +495,27 @@ cat >> deploy_ai_brain.yml << 'EOF'
         project_src: /home/angel/ai-stack/monitoring
         state: present
 EOF
+
+```
 ---
+
+## 26. Intrusion Prevention System (IPS) Expansion
+
+After stabilizing the WAN interface, the Suricata deployment was extended to cover the internal AIOPS network. Based on hardware compatibility and stability tests, the **Legacy Mode** was chosen for blocking operations.
+
+### 26.1 Interface Strategy
+The goal is a multi-layered defense:
+* **WAN (vtnet0):** Filters incoming traffic from the internet before it hits the internal network.
+* **AIOPS (VLAN30):** Monitors and protects the internal AI-Ops node from lateral movement within the lab.
+
+### 26.2 Implementation: Adding AIOPS Interface
+To include the internal network in the security monitoring:
+1. **Add Interface:** Navigation to **Services → Suricata → Interfaces → Add**.
+2. **Assignment:** Selected `AIOPS` as the interface.
+3. **Blocking Mode:** Set to `Legacy Mode`.
+4. **Log Settings:** Enabled `Send Alerts to System Log` to ensure n8n can process internal security events via the `syslog-ng` pipeline.
+
+
 
 ## 22. Milestone 5 Reached: Resilient AI Operations
 - [x] **IaC Persistence:** Ansible stack is tracked in Git.

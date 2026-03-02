@@ -531,7 +531,7 @@ Integration into the n8n AI-Security Analyst is achieved through enhanced loggin
 
 To automate threat detection and reduce alert fatigue, an autonomous AI Security Analyst was deployed using n8n and Llama3. This workflow fulfills key requirements for **Security+ Domain 4.3 (Incident Response)** and **2.1 (Threat Intelligence)**.
 
-### 31.1 The "Suricata Analyst" Workflow
+### 23.1 The "Suricata Analyst" Workflow
 The system follows a 5-minute polling cycle to analyze network telemetry:
 
 1.  **Ingestion (Schedule):** Triggers every 5 minutes to maintain near real-time visibility.
@@ -540,13 +540,13 @@ The system follows a 5-minute polling cycle to analyze network telemetry:
 4.  **Filtering (IF-Node):** Ensures only actionable intelligence is forwarded to prevent notification spam.
 5.  **Alerting (Telegram):** Sends a formatted Markdown report directly to the administrator's mobile device.
 
-### 31.2 Verified AI Analysis Results
+### 23.2 Verified AI Analysis Results
 During initial testing, the AI successfully categorized the following internal events:
 * **Configuration Changes:** Identified as Low Risk ✅
 * **Log Rotations:** Correctly identified as Normal/Maintenance ✅
 * **Session Timeouts:** Identified as standard security behavior ✅
 
-### 31.3 Current Automation Status
+### 23.3 Current Automation Status
 | Workflow Name | Function | Frequency | Target |
 | :--- | :--- | :--- | :--- |
 | **Proxmox VM Monitor** | Resource Health | 5 Min | Telegram |

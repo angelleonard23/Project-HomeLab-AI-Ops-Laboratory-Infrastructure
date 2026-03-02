@@ -525,7 +525,35 @@ Integration into the n8n AI-Security Analyst is achieved through enhanced loggin
 - [x] **Alert Visibility:** AIOPS is selectable in the Alert and Block dropdown menus.
 - [x] **Log Stream:** Security events are flowing from the internal VLAN to the central syslog-ng collector. [cite: eigene Analyse
 
+---
 
+## 23. AI-Powered Security Operations Center (SOC)
+
+To automate threat detection and reduce alert fatigue, an autonomous AI Security Analyst was deployed using n8n and Llama3. This workflow fulfills key requirements for **Security+ Domain 4.3 (Incident Response)** and **2.1 (Threat Intelligence)**.
+
+### 31.1 The "Suricata Analyst" Workflow
+The system follows a 5-minute polling cycle to analyze network telemetry:
+
+1.  **Ingestion (Schedule):** Triggers every 5 minutes to maintain near real-time visibility.
+2.  **Extraction (SSH):** Filters `/home/angel/ai-stack/syslog/pfsense.log` for Suricata-specific security events while ignoring administrative noise (e.g., successful logins).
+3.  **Intelligence (Ollama/Llama3):** Processes the raw log strings. The AI acts as a Tier-1 Analyst, categorizing events by risk level and suggesting mitigation strategies.
+4.  **Filtering (IF-Node):** Ensures only actionable intelligence is forwarded to prevent notification spam.
+5.  **Alerting (Telegram):** Sends a formatted Markdown report directly to the administrator's mobile device.
+
+### 31.2 Verified AI Analysis Results
+During initial testing, the AI successfully categorized the following internal events:
+* **Configuration Changes:** Identified as Low Risk ✅
+* **Log Rotations:** Correctly identified as Normal/Maintenance ✅
+* **Session Timeouts:** Identified as standard security behavior ✅
+
+### 31.3 Current Automation Status
+| Workflow Name | Function | Frequency | Target |
+| :--- | :--- | :--- | :--- |
+| **Proxmox VM Monitor** | Resource Health | 5 Min | Telegram |
+| **pfSense Log Analysis** | Firewall Telemetry | 5 Min | Telegram |
+| **Suricata Security** | IDS/IPS Intelligence | 5 Min | Telegram |
+
+> **Operational Insight:** By offloading initial log review to Llama3, the "Mean Time to Detect" (MTTD) is significantly reduced without requiring human intervention for routine logs.
 
 
 ## 19. Milestone 4 Reached: Full Stack Automation

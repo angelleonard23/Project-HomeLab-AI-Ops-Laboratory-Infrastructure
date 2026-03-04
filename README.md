@@ -565,7 +565,7 @@ To enable secure access to the AI-Stack Dashboard (Open WebUI) and n8n workflows
 The connection utilizes a dedicated VPN subnet to isolate administrative traffic:
 * **VPN Subnet:** `10.0.50.0/24`
 * **Mobile Peer (iPhone):** `10.0.50.3`
-* **Laptop Peer (ROG):** `10.0.50.4`
+* **Laptop Peer (ROG):** `10.0.50.2`
 * **Target Resource:** `192.168.30.20` (Ubuntu AI Server), Port `8080`.
 
 ### 24.2 Critical Troubleshooting & Resolution
@@ -593,15 +593,5 @@ The connection utilizes a dedicated VPN subnet to isolate administrative traffic
 | **iPhone (5G)** | WireGuard App | PubKey + PSK | **SUCCESS (Dashboard OK)** |
 | **ASUS ROG Laptop** | WireGuard Windows | PubKey + PSK | **Pending (Handshake Fix)** |
 
-> **Operational Insight:** Implementing a **Preshared Key (PSK)** in addition to the Public/Private key exchange provides an extra layer of symmetric encryption, significantly enhancing the tunnel's security posture against potential future threats.
-## 19. Milestone 4 Reached: Full Stack Automation
-- [x] **IaC Transition:** Manual Docker commands replaced by Ansible Playbook.
-- [x] **Service Orchestration:** Verified deployment of all 5 core AI-Ops services.
-- [x] **Data Persistence:** Volume mounts and log paths correctly mapped via automation.
 
-## 20. Roadmap: Future Innovations
-With the foundation now fully automated and reproducible, the next phase focuses on:
-* **Smart Alerting:** Implementing state-aware logic in n8n to minimize Telegram noise.
-* **Grafana Integration:** Adding a visualization layer for security events and VM metrics.
-* **Self-Healing:** Enabling AI-triggered automated VM restarts for critical infrastructure.
 

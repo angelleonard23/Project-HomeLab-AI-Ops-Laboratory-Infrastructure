@@ -555,7 +555,45 @@ During initial testing, the AI successfully categorized the following internal e
 
 > **Operational Insight:** By offloading initial log review to Llama3, the "Mean Time to Detect" (MTTD) is significantly reduced without requiring human intervention for routine logs.
 
+---
 
+## 24. Secure Remote Access: WireGuard VPN & Network Persistence
+
+To enable secure access to the AI-Stack Dashboard (Open WebUI) and n8n workflows from external networks, a WireGuard VPN was implemented on pfSense. The troubleshooting of this setup covers critical aspects of **Security+ Domain 3.2 (Remote Access Solutions)** and **4.4 (Network Troubleshooting)**.
+
+### 24.1 WireGuard Core Architecture
+The connection utilizes a dedicated VPN subnet to isolate administrative traffic:
+* **VPN Subnet:** `10.0.50.0/24`
+* **Mobile Peer (iPhone):** `10.0.50.3`
+* **Laptop Peer (ROG):** `10.0.50.4`
+* **Target Resource:** `192.168.30.20` (Ubuntu AI Server), Port `8080`.
+
+### 24.2 Critical Troubleshooting & Resolution
+
+#### I. Hardware Checksum Offloading (Virtualization Bug)
+* **Problem:** Packets were dropped by the target server despite "Pass" rules in the firewall.
+* **Root Cause:** Virtualized network interfaces (VirtIO) often miscalculate checksums, causing the target OS to discard packets.
+* **Resolution:** Navigated to `System > Advanced > Networking` and enabled **Disable hardware checksum offload**.
+
+#### II. Source-IP Misalignment (The "Outbound NAT" Conflict)
+* **Problem:** `tcpdump` on the Ubuntu server showed incoming requests from the invalid IP `192.168.30.0` instead of the VPN IP `10.0.50.3`.
+* **Root Cause:** Automatic Outbound NAT was incorrectly masking VPN traffic with the network ID of the destination interface.
+* **Resolution:** Switched to **Hybrid Outbound NAT** and created a **"No NAT"** rule for traffic from `10.0.50.0/24` to `192.168.30.0/24`.
+
+#### III. Cryptographic Identity & Key Management
+* **Problem:** Laptop connection resulted in "0 B Received".
+* **Root Cause:** Peer identity conflict. WireGuard requires a unique Public/Private key pair for every individual device.
+* **Resolution:** 1. Generated a unique key pair on the ROG Laptop.
+    2. Updated the pfSense Peer configuration with the Laptop's specific Public Key.
+    3. Correctly mapped the pfSense Tunnel Public Key to the Laptop's Peer configuration.
+
+### 24.3 Verified Connectivity Matrix
+| Device | Transport | Authentication | Status |
+| :--- | :--- | :--- | :--- |
+| **iPhone (5G)** | WireGuard App | PubKey + PSK | **SUCCESS (Dashboard OK)** |
+| **ASUS ROG Laptop** | WireGuard Windows | PubKey + PSK | **Pending (Handshake Fix)** |
+
+> **Operational Insight:** Implementing a **Preshared Key (PSK)** in addition to the Public/Private key exchange provides an extra layer of symmetric encryption, significantly enhancing the tunnel's security posture against potential future threats.
 ## 19. Milestone 4 Reached: Full Stack Automation
 - [x] **IaC Transition:** Manual Docker commands replaced by Ansible Playbook.
 - [x] **Service Orchestration:** Verified deployment of all 5 core AI-Ops services.

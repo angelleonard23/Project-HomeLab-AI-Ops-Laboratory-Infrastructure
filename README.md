@@ -652,7 +652,7 @@ The following rules were applied to the **WireGuard** tab in pfSense, following 
 | 1 | **PASS** | `10.0.50.2` (Laptop) | `10.0.20.1` | `8443 (HTTPS)` | Restricted pfSense Admin GUI |
 | 2 | **PASS** | `10.0.50.2` (Laptop) | `192.168.30.20` | `22 (SSH)` | Secure CLI Management |
 | 3 | **PASS** | `Trusted_VPN_Clients` | `192.168.30.20` | `AI_Stack_Ports` | Access to WebUIs (n8n, Grafana, OpenWebUI) |
-| 4 | **PASS** | `WireGuard networks` | `10.0.20.1` | `53 (UDP/DNS)` | Internal DNS Resolution via pfSense |
+| 4 | **PASS** | `Trusted_VPN_Clients` | `10.0.20.1` | `53 (UDP/DNS)` | Internal DNS Resolution via pfSense |
 | 5 | **BLOCK/LOG**| `Any` | `Any` | `Any` | **Default Deny**: Logs unauthorized attempts |
 
 

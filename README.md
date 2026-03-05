@@ -662,91 +662,54 @@ To resolve connection drops in the virtualized environment, the **`Allow_Trusted
 * **Alerting:** Unauthorized access attempts (e.g., scanning the Guest VLAN) trigger immediate high-priority Telegram notifications.
 
 > **Status [2026-03-05]:** The WireGuard environment is verified as **Stable** and **Hardened**. Access is strictly identity-mapped, rule-loading errors are eliminated, and full audit logging is operational.
-## 25. Post-Implementation Security Hardening
+## 25. Post-Implementation Security Hardening & Stability
 
-After establishing full connectivity, the following hardening steps were performed to ensure long-term stability and security:
+After establishing full connectivity, the following hardening steps were performed to ensure long-term stability and security for the remote access solution (Security+ Domain 3.2 & 4.4).
 
-### 25.1 MTU Optimization
-To prevent packet fragmentation across different ISP backbones (e.g., switching from Home Fiber to Mobile 5G), the Maximum Transmission Unit (MTU) was tuned.
-* **Adjustment:** Added `MTU = 1280` to the Laptop `[Interface]` configuration.
-* **Benefit:** Ensures that VPN headers do not exceed the standard 1500-byte Ethernet frame, preventing connection drops during large data transfers (e.g., AI model downloads).
+### 25.1 Interface Architecture: Dual-Tab Management
+To maintain the integrity of Outbound NAT mappings and routing persistence, a dual-tab interface structure was implemented in pfSense:
 
-### 25.2 Firewall Re-Enablement
-* **Action:** Reactivated **Windows Defender Firewall** on the ROG Laptop.
-* **Result:** Verified that the WireGuard tunnel remains operational. The WireGuard Windows service automatically handles the necessary routing table entries and firewall exceptions for the `WireGuard` interface.
+* **Layer 1: WireGuard (Group Tab):** Serves as the central instance for administrative rules (GUI access, DNS) and global logging (Default Deny).
+* **Layer 2: VPN (Member Tab/`tun_wg0`):** A manually assigned interface dedicated to the data-plane traffic for the AI-Stack. 
+    * **IPv4 Config:** Set to **Static IPv4**.
+    * **IPv4 Address:** `10.0.50.1/24` (Acts as the local gateway for the VPN subnet).
+    * **MSS Clamping:** Set to `1240` to prevent packet fragmentation across diverse mobile networks.
 
-### 25.3 Dynamic Endpoint Configuration
-For seamless transition between "Internal" (Home WLAN) and "External" (Remote/Public) environments:
-* **Internal Testing:** Endpoint set to pfSense LAN IP (`192.168.1.136:51820`).
-* **Production Remote Access:** Endpoint set to the Public WAN Address/MyFRITZ Domain.
+### 25.2 Network Optimization & Client Security
+* **MTU Tuning:** Configured `MTU = 1280` in the Laptop client configuration to ensure VPN headers do not exceed the standard 1500-byte Ethernet frame.
+* **Endpoint Logic:** Enabled seamless roaming between the Internal Test Endpoint (`192.168.1.136:51820`) and the Production MyFRITZ/Public Endpoint.
+* **Client-Side Protection:** Reactivated Windows Defender Firewall on the ROG Laptop; the WireGuard service automatically manages the necessary interface exceptions.
 
-| Target Resource | Access Method | Protocol | Status |
-| :--- | :--- | :--- | :--- |
-| **pfSense GUI** | `https://192.168.1.136` | HTTPS (via VPN) | **VERIFIED** |
-| **Ubuntu AI-Stack** | `http://192.168.30.20:8080` | HTTP (via VPN) | **VERIFIED** |
-| **Linux Mint Mgmt** | SSH `192.168.30.x` | SSH (via VPN) | **VERIFIED** |
+### 25.3 Firewall Rule Orchestration (Least Privilege)
+The rule logic was migrated from dynamic system objects to **Static Aliases** to resolve the pfSense `macro WIREGUARD__NETWORK not defined` error caused by manual interface assignment.
 
-### 25.4 Firewall Hardening & Rule Orchestration (Least Privilege)
-To move from a functional "Permit All" state to a secure "Production" state, a granular ruleset was implemented on the WireGuard interface. The goal is to restrict lateral movement and protect administrative interfaces.
+#### Identity Management (Aliases)
+* **`Trusted_VPN_Clients`**: Contains the static VPN IPs for the Laptop (`10.0.50.2`) and Mobile device (`10.0.50.3`).
 
-#### 1. Identity Management (Aliases)
-To simplify management while maintaining strict control, a central alias was created:
-* **Alias `Trusted_VPN_Clients`**: Contains the specific static VPN IPs of the ROG Laptop (`10.0.50.2`) and the Mobile device (`10.0.50.3`).
+#### Hardened Ruleset (Top-Down Execution)
+Filtering is primarily handled on the **WireGuard (Group)** tab, while the **VPN (Member)** tab is used for technical stability overrides.
 
-#### 2. Hardened Ruleset (Order of Execution)
-The following rules were applied to the **WireGuard** tab in pfSense, following the "Top-Down" processing logic:
+| Tab | Priority | Action | Source | Destination | Port | Purpose |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **WG** | 1 | **PASS** | `10.0.50.2` | `10.0.20.1` | `8443` | Restricted pfSense Admin GUI |
+| **WG** | 2 | **PASS** | `10.0.50.2` | `192.168.30.20` | `22` | Secure CLI Management (SSH) |
+| **WG** | 3 | **PASS** | `Trusted_Clients` | `192.168.30.20` | `AI_Ports` | WebUIs (n8n, Grafana, OpenWebUI) |
+| **WG** | 4 | **PASS** | `Trusted_Clients` | `10.0.20.1` | `53 (UDP)` | Internal DNS (Unbound) |
+| **VPN** | 5 | **PASS** | `Trusted_Clients` | `192.168.30.0/24`| `*` | **Sloppy Access (Stability Fix)** |
+| **WG** | 6 | **BLOCK/LOG** | `Any` | `Any` | `Any` | **Default Deny** (SOC Data Source) |
 
-| Priority | Action | Source | Destination | Port / Service | Purpose |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| 1 | **PASS** | `10.0.50.2` (Laptop) | `10.0.20.1` | `8443 (HTTPS)` | Restricted pfSense Admin GUI |
-| 2 | **PASS** | `10.0.50.2` (Laptop) | `192.168.30.20` | `22 (SSH)` | Secure CLI Management |
-| 3 | **PASS** | `Trusted_VPN_Clients` | `192.168.30.20` | `AI_Stack_Ports` | Access to WebUIs (n8n, Grafana, OpenWebUI) |
-| 4 | **PASS** | `Trusted_VPN_Clients` | `10.0.20.1` | `53 (UDP/DNS)` | Internal DNS Resolution via pfSense |
-| 5 | **BLOCK/LOG**| `Any` | `Any` | `Any` | **Default Deny**: Logs unauthorized attempts |
+### 25.4 Technical Fix: Asymmetric Routing & State Handling
+To resolve connection drops in the virtualized environment, the **`Allow_Trusted_VPN_Sloppy_Access`** rule was implemented on the VPN Interface tab:
+* **Sloppy State & Any Flags:** Allows TCP data flow even during incomplete handshakes or packet reordering within the tunnel.
+* **NAT Persistence:** Re-verified the **Hybrid Outbound NAT** rule (Interface: `AIOPS`, Source: `10.0.50.0/24`, Destination: `192.168.30.0/24`, Option: `NO NAT`) to preserve original source IPs.
 
+### 25.5 DNS Infrastructure & Leak Protection
+* **Encryption:** All DNS queries are tunneled and processed via `DNS = 10.0.20.1`.
+* **Internal Resolution:** The Unbound DNS Resolver listens on both WireGuard and AIOPS interfaces, allowing resolution of internal `.ai.local` hostnames from remote locations.
 
+### 25.6 Security Monitoring & SOC Integration
+**Rule 6 (Block & Log)** acts as a sensor for the AIOps monitoring stack:
+* **SOC Trigger:** Blocked packets generate log entries monitored by the `Suricata_Analyst` n8n workflow.
+* **Alerting:** Unauthorized access attempts (e.g., scanning the Guest VLAN) trigger immediate high-priority Telegram notifications.
 
-#### 3. DNS Infrastructure & Leak Protection
-To prevent DNS leaks and ensure internal hostname resolution works over the tunnel:
-* **Interface Configuration**: The DNS Resolver (Unbound) was configured to listen on the **WireGuard** and **AIOPS** interfaces.
-* **Client Setup**: The WireGuard client configuration was updated to use `DNS = 10.0.20.1`.
-* **Result**: All DNS queries are now encrypted within the tunnel and processed by pfSense, inheriting the protection of pfBlockerNG/Unbound.
-
-### 25.5 Security Monitoring & SOC Integration
-The final **Rule 5 (Block & Log)** serves as the primary data source for the AIOps monitoring stack:
-* **Log Forwarding**: Every blocked packet is logged locally on pfSense.
-* **n8n Trigger**: These logs are monitored by the `Suricata_Analyst` workflow. 
-* **Alerting**: Any attempt by a VPN client to scan unauthorized subnets (e.g., the local LAN or Guest network) triggers a high-priority Telegram notification.
-
-> **Status Update [2026-03-05]:** The WireGuard environment is verified as "Hardened". Access is strictly mapped to identities, and full audit logging is active for all rejected traffic.
-> 
-### 25.6 Connectivity Restoration (Asymmetric Routing Fix)
-As of 2026-03-05, full connectivity for Mobile and Laptop peers is restored. 
-
-#### Key Technical Adjustments:
-1. **TCP State Handling:** Implemented a broad "Pass" rule on the **VPN Interface** with `State Type: Sloppy` and `Any Flags` enabled. This bypasses strict TCP sequence checking which was causing drops in the virtualized tunnel environment.
-2. **NAT Persistence:** Re-verified the **Hybrid Outbound NAT** rule. The "NO NAT" policy for `10.0.50.0/24` on the `AIOPS` interface remains critical for bi-directional traffic.
-3. **Redundancy:** Rules in the `WireGuard` group tab provide granular "Least Privilege" filtering, while the `VPN` interface rule ensures routing stability.
-
-**Result:** Verified access to AI-Stack Dashboards (8080) and SSH (22) from remote networks.
-### 25.7. Final Architecture: Dual-Tab Management
-To maintain the integrity of Outbound NAT mappings and interface-specific routing fixes, the manual interface assignment (VPN/tun_wg0) remains active.
-
-* **Layer 1: WireGuard (Group Tab):** Handles administrative access (pfSense GUI, DNS) and central logging (Default Deny).
-* **Layer 2: VPN (Member Tab):** Handles the data-plane for the AI-Stack. Includes the "Sloppy State" fix to ensure TCP stability in virtualized environments.
-* **NAT Persistence:** This dual-tab setup ensures the "No NAT" rules for the AIOPS subnet remain persistent across reboots.
-
-### 25.8 Advanced Rule Management & Alias Integration
-To ensure maximum scalability and resolve internal pfSense macro errors, the rule logic was migrated from dynamic system objects to custom Aliases.
-
-#### Alias Configuration:
-* **Trusted_VPN_Clients:** Contains all authorized WireGuard Peer IPs (e.g., 10.0.50.2, 10.0.50.3).
-
-#### Rule Orchestration:
-1. **WireGuard (Group) Tab:** - DNS access now uses the `Trusted_VPN_Clients` alias as Source.
-   - Fixed the "macro WIREGUARD__NETWORK not defined" error.
-2. **VPN (Interface) Tab:** - Rule `Allow_Trusted_VPN_Sloppy_Access` provides the data-plane connection to the AI-Stack.
-   - **Technical Fix:** Enabled `Sloppy State` to handle asymmetric routing/packet reordering in the virtualized tunnel environment.
-
-#### Result:
-The system is now "Error-Free" in the logs and provides stable, high-performance access to the AI models and n8n workflows.
+> **Status [2026-03-05]:** The WireGuard environment is verified as **Stable** and **Hardened**. Access is strictly identity-mapped, rule-loading errors are eliminated, and full audit logging is operational.

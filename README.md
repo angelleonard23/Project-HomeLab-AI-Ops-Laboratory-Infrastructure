@@ -637,3 +637,36 @@ For seamless transition between "Internal" (Home WLAN) and "External" (Remote/Pu
 | **Ubuntu AI-Stack** | `http://192.168.30.20:8080` | HTTP (via VPN) | **VERIFIED** |
 | **Linux Mint Mgmt** | SSH `192.168.30.x` | SSH (via VPN) | **VERIFIED** |
 
+### 25.4 Firewall Hardening & Rule Orchestration (Least Privilege)
+To move from a functional "Permit All" state to a secure "Production" state, a granular ruleset was implemented on the WireGuard interface. The goal is to restrict lateral movement and protect administrative interfaces.
+
+#### 1. Identity Management (Aliases)
+To simplify management while maintaining strict control, a central alias was created:
+* **Alias `Trusted_VPN_Clients`**: Contains the specific static VPN IPs of the ROG Laptop (`10.0.50.2`) and the Mobile device (`10.0.50.3`).
+
+#### 2. Hardened Ruleset (Order of Execution)
+The following rules were applied to the **WireGuard** tab in pfSense, following the "Top-Down" processing logic:
+
+| Priority | Action | Source | Destination | Port / Service | Purpose |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 1 | **PASS** | `10.0.50.2` (Laptop) | `10.0.20.1` | `8443 (HTTPS)` | Restricted pfSense Admin GUI |
+| 2 | **PASS** | `10.0.50.2` (Laptop) | `192.168.30.20` | `22 (SSH)` | Secure CLI Management |
+| 3 | **PASS** | `Trusted_VPN_Clients` | `192.168.30.20` | `AI_Stack_Ports` | Access to WebUIs (n8n, Grafana, OpenWebUI) |
+| 4 | **PASS** | `WireGuard networks` | `10.0.20.1` | `53 (UDP/DNS)` | Internal DNS Resolution via pfSense |
+| 5 | **BLOCK/LOG**| `Any` | `Any` | `Any` | **Default Deny**: Logs unauthorized attempts |
+
+
+
+#### 3. DNS Infrastructure & Leak Protection
+To prevent DNS leaks and ensure internal hostname resolution works over the tunnel:
+* **Interface Configuration**: The DNS Resolver (Unbound) was configured to listen on the **WireGuard** and **AIOPS** interfaces.
+* **Client Setup**: The WireGuard client configuration was updated to use `DNS = 10.0.20.1`.
+* **Result**: All DNS queries are now encrypted within the tunnel and processed by pfSense, inheriting the protection of pfBlockerNG/Unbound.
+
+### 25.5 Security Monitoring & SOC Integration
+The final **Rule 5 (Block & Log)** serves as the primary data source for the AIOps monitoring stack:
+* **Log Forwarding**: Every blocked packet is logged locally on pfSense.
+* **n8n Trigger**: These logs are monitored by the `Suricata_Analyst` workflow. 
+* **Alerting**: Any attempt by a VPN client to scan unauthorized subnets (e.g., the local LAN or Guest network) triggers a high-priority Telegram notification.
+
+> **Status Update [2026-03-05]:** The WireGuard environment is verified as "Hardened". Access is strictly mapped to identities, and full audit logging is active for all rejected traffic.

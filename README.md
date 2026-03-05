@@ -670,3 +670,13 @@ The final **Rule 5 (Block & Log)** serves as the primary data source for the AIO
 * **Alerting**: Any attempt by a VPN client to scan unauthorized subnets (e.g., the local LAN or Guest network) triggers a high-priority Telegram notification.
 
 > **Status Update [2026-03-05]:** The WireGuard environment is verified as "Hardened". Access is strictly mapped to identities, and full audit logging is active for all rejected traffic.
+> 
+### 25.6 Final Connectivity Restoration (Asymmetric Routing Fix)
+As of 2026-03-05, full connectivity for Mobile and Laptop peers is restored. 
+
+#### Key Technical Adjustments:
+1. **TCP State Handling:** Implemented a broad "Pass" rule on the **VPN Interface** with `State Type: Sloppy` and `Any Flags` enabled. This bypasses strict TCP sequence checking which was causing drops in the virtualized tunnel environment.
+2. **NAT Persistence:** Re-verified the **Hybrid Outbound NAT** rule. The "NO NAT" policy for `10.0.50.0/24` on the `AIOPS` interface remains critical for bi-directional traffic.
+3. **Redundancy:** Rules in the `WireGuard` group tab provide granular "Least Privilege" filtering, while the `VPN` interface rule ensures routing stability.
+
+**Result:** Verified access to AI-Stack Dashboards (8080) and SSH (22) from remote networks.

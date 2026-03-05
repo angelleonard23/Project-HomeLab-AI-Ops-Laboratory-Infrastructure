@@ -671,7 +671,7 @@ The final **Rule 5 (Block & Log)** serves as the primary data source for the AIO
 
 > **Status Update [2026-03-05]:** The WireGuard environment is verified as "Hardened". Access is strictly mapped to identities, and full audit logging is active for all rejected traffic.
 > 
-### 25.6 Final Connectivity Restoration (Asymmetric Routing Fix)
+### 25.6 Connectivity Restoration (Asymmetric Routing Fix)
 As of 2026-03-05, full connectivity for Mobile and Laptop peers is restored. 
 
 #### Key Technical Adjustments:
@@ -680,3 +680,10 @@ As of 2026-03-05, full connectivity for Mobile and Laptop peers is restored.
 3. **Redundancy:** Rules in the `WireGuard` group tab provide granular "Least Privilege" filtering, while the `VPN` interface rule ensures routing stability.
 
 **Result:** Verified access to AI-Stack Dashboards (8080) and SSH (22) from remote networks.
+### 25.7. Final Architecture: Dual-Tab Management
+To maintain the integrity of Outbound NAT mappings and interface-specific routing fixes, the manual interface assignment (VPN/tun_wg0) remains active.
+
+* **Layer 1: WireGuard (Group Tab):** Handles administrative access (pfSense GUI, DNS) and central logging (Default Deny).
+* **Layer 2: VPN (Member Tab):** Handles the data-plane for the AI-Stack. Includes the "Sloppy State" fix to ensure TCP stability in virtualized environments.
+* **NAT Persistence:** This dual-tab setup ensures the "No NAT" rules for the AIOPS subnet remain persistent across reboots.
+

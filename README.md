@@ -619,97 +619,47 @@ After establishing full connectivity, the following hardening steps were perform
 ### 25.1 Interface Architecture: Dual-Tab Management
 To maintain the integrity of Outbound NAT mappings and routing persistence, a dual-tab interface structure was implemented in pfSense:
 
-* **Layer 1: WireGuard (Group Tab):** Serves as the central instance for administrative rules (GUI access, DNS) and global logging (Default Deny).
+* **Layer 1: WireGuard (Group Tab):** Serves as the central instance for administrative rules and global logging (Default Deny).
 * **Layer 2: VPN (Member Tab/`tun_wg0`):** A manually assigned interface dedicated to the data-plane traffic for the AI-Stack. This ensures that NAT fixes and MSS clamping remain persistent across system reboots.
-    * **IPv4 Config:** Set to `None` (Routing is handled by the WireGuard service logic).
-    * **MSS Clamping:** Set to `1240` to prevent packet fragmentation across diverse mobile networks.
-
-### 25.2 Network Optimization & Client Security
-* **MTU Tuning:** Configured `MTU = 1280` in the Laptop client configuration to ensure VPN headers do not exceed the standard 1500-byte Ethernet frame.
-* **Endpoint Logic:** Enabled seamless roaming between the Internal Test Endpoint (`192.168.1.136:51820`) and the Production MyFRITZ/Public Endpoint.
-* **Client-Side Protection:** Reactivated Windows Defender Firewall on the ROG Laptop; the WireGuard service automatically manages the necessary interface exceptions.
-
-### 25.3 Firewall Rule Orchestration (Least Privilege)
-The rule logic was migrated from dynamic system objects to **Static Aliases** to resolve the pfSense `macro WIREGUARD__NETWORK not defined` error caused by manual interface assignment.
-
-#### Identity Management (Aliases)
-* **`Trusted_VPN_Clients`**: Contains the static VPN IPs for the Laptop (`10.0.50.2`) and Mobile device (`10.0.50.3`).
-
-#### Hardened Ruleset (Top-Down Execution)
-Filtering is primarily handled on the **WireGuard (Group)** tab, while the **VPN (Member)** tab is used for technical stability overrides.
-
-| Tab | Priority | Action | Source | Destination | Port | Purpose |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **WG** | 1 | **PASS** | `10.0.50.2` | `10.0.20.1` | `8443` | Restricted pfSense Admin GUI |
-| **WG** | 2 | **PASS** | `10.0.50.2` | `192.168.30.20` | `22` | Secure CLI Management (SSH) |
-| **WG** | 3 | **PASS** | `Trusted_Clients` | `192.168.30.20` | `AI_Ports` | WebUIs (n8n, Grafana, OpenWebUI) |
-| **WG** | 4 | **PASS** | `Trusted_Clients` | `10.0.20.1` | `53 (UDP)` | Internal DNS (Unbound) |
-| **VPN** | 5 | **PASS** | `Trusted_Clients` | `192.168.30.0/24`| `*` | **Sloppy Access (Stability Fix)** |
-| **WG** | 6 | **BLOCK/LOG** | `Any` | `Any` | `Any` | **Default Deny** (SOC Data Source) |
-
-### 25.4 Technical Fix: Asymmetric Routing & State Handling
-To resolve connection drops in the virtualized environment, the **`Allow_Trusted_VPN_Sloppy_Access`** rule was implemented on the VPN Interface tab:
-* **Sloppy State & Any Flags:** Allows TCP data flow even during incomplete handshakes or packet reordering within the tunnel.
-* **NAT Persistence:** Re-verified the **Hybrid Outbound NAT** rule (Interface: `AIOPS`, Source: `10.0.50.0/24`, Destination: `192.168.30.0/24`, Option: `NO NAT`) to preserve original source IPs.
-
-### 25.5 DNS Infrastructure & Leak Protection
-* **Encryption:** All DNS queries are tunneled and processed via `DNS = 10.0.20.1`.
-* **Internal Resolution:** The Unbound DNS Resolver listens on both WireGuard and AIOPS interfaces, allowing resolution of internal `.ai.local` hostnames from remote locations.
-
-### 25.6 Security Monitoring & SOC Integration
-**Rule 6 (Block & Log)** acts as a sensor for the AIOps monitoring stack:
-* **SOC Trigger:** Blocked packets generate log entries monitored by the `Suricata_Analyst` n8n workflow.
-* **Alerting:** Unauthorized access attempts (e.g., scanning the Guest VLAN) trigger immediate high-priority Telegram notifications.
-
-> **Status [2026-03-05]:** The WireGuard environment is verified as **Stable** and **Hardened**. Access is strictly identity-mapped, rule-loading errors are eliminated, and full audit logging is operational.
-## 25. Post-Implementation Security Hardening & Stability
-
-After establishing full connectivity, the following hardening steps were performed to ensure long-term stability and security for the remote access solution (Security+ Domain 3.2 & 4.4).
-
-### 25.1 Interface Architecture: Dual-Tab Management
-To maintain the integrity of Outbound NAT mappings and routing persistence, a dual-tab interface structure was implemented in pfSense:
-
-* **Layer 1: WireGuard (Group Tab):** Serves as the central instance for administrative rules (GUI access, DNS) and global logging (Default Deny).
-* **Layer 2: VPN (Member Tab/`tun_wg0`):** A manually assigned interface dedicated to the data-plane traffic for the AI-Stack. 
     * **IPv4 Config:** Set to **Static IPv4**.
     * **IPv4 Address:** `10.0.50.1/24` (Acts as the local gateway for the VPN subnet).
     * **MSS Clamping:** Set to `1240` to prevent packet fragmentation across diverse mobile networks.
 
 ### 25.2 Network Optimization & Client Security
 * **MTU Tuning:** Configured `MTU = 1280` in the Laptop client configuration to ensure VPN headers do not exceed the standard 1500-byte Ethernet frame.
-* **Endpoint Logic:** Enabled seamless roaming between the Internal Test Endpoint (`192.168.1.136:51820`) and the Production MyFRITZ/Public Endpoint.
-* **Client-Side Protection:** Reactivated Windows Defender Firewall on the ROG Laptop; the WireGuard service automatically manages the necessary interface exceptions.
+* **DNS Gateway Logic:** Clients are configured to use `DNS = 10.0.50.1`. This ensures all queries are processed by the local Unbound instance over the encrypted tunnel.
+* **DNS Rebinding Protection:** Hardened the system against rebinding attacks while allowing internal resolution by adding the `private-domain: "ai.local"` directive to the Unbound Custom Options.
 
 ### 25.3 Firewall Rule Orchestration (Least Privilege)
-The rule logic was migrated from dynamic system objects to **Static Aliases** to resolve the pfSense `macro WIREGUARD__NETWORK not defined` error caused by manual interface assignment.
+The rule logic uses **Static Aliases** to resolve pfSense `macro` errors and ensures strict identity-based access. Filtering is primarily handled on the **WireGuard (Group)** tab, while the **VPN (Member)** tab handles technical stability.
 
 #### Identity Management (Aliases)
-* **`Trusted_VPN_Clients`**: Contains the static VPN IPs for the Laptop (`10.0.50.2`) and Mobile device (`10.0.50.3`).
+* **`Trusted_VPN_Clients`**: Contains static VPN IPs for the Laptop (`10.0.50.2`) and Mobile device (`10.0.50.3`).
 
 #### Hardened Ruleset (Top-Down Execution)
-Filtering is primarily handled on the **WireGuard (Group)** tab, while the **VPN (Member)** tab is used for technical stability overrides.
-
 | Tab | Priority | Action | Source | Destination | Port | Purpose |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **WG** | 1 | **PASS** | `10.0.50.2` | `10.0.20.1` | `8443` | Restricted pfSense Admin GUI |
 | **WG** | 2 | **PASS** | `10.0.50.2` | `192.168.30.20` | `22` | Secure CLI Management (SSH) |
-| **WG** | 3 | **PASS** | `Trusted_Clients` | `192.168.30.20` | `AI_Ports` | WebUIs (n8n, Grafana, OpenWebUI) |
-| **WG** | 4 | **PASS** | `Trusted_Clients` | `10.0.20.1` | `53 (UDP)` | Internal DNS (Unbound) |
+| **WG** | 3 | **PASS** | `Trusted_Clients` | `192.168.30.20` | `AI_Ports` | WebUIs (n8n, OpenWebUI) |
+| **VPN** | 4 | **PASS** | `Trusted_Clients` | `10.0.50.1` | `53 (UDP)` | Internal DNS (Unbound) |
 | **VPN** | 5 | **PASS** | `Trusted_Clients` | `192.168.30.0/24`| `*` | **Sloppy Access (Stability Fix)** |
 | **WG** | 6 | **BLOCK/LOG** | `Any` | `Any` | `Any` | **Default Deny** (SOC Data Source) |
 
 ### 25.4 Technical Fix: Asymmetric Routing & State Handling
 To resolve connection drops in the virtualized environment, the **`Allow_Trusted_VPN_Sloppy_Access`** rule was implemented on the VPN Interface tab:
 * **Sloppy State & Any Flags:** Allows TCP data flow even during incomplete handshakes or packet reordering within the tunnel.
-* **NAT Persistence:** Re-verified the **Hybrid Outbound NAT** rule (Interface: `AIOPS`, Source: `10.0.50.0/24`, Destination: `192.168.30.0/24`, Option: `NO NAT`) to preserve original source IPs.
+* **NAT Persistence:** Verified **Hybrid Outbound NAT** rule (Interface: `AIOPS`, Source: `10.0.50.0/24`, Destination: `192.168.30.0/24`, Option: `NO NAT`) to preserve original source IPs for auditing.
 
-### 25.5 DNS Infrastructure & Leak Protection
-* **Encryption:** All DNS queries are tunneled and processed via `DNS = 10.0.20.1`.
-* **Internal Resolution:** The Unbound DNS Resolver listens on both WireGuard and AIOPS interfaces, allowing resolution of internal `.ai.local` hostnames from remote locations.
+### 25.5 DNS Infrastructure & Internal Resolution
+The Unbound DNS Resolver provides local resolution for the AI-Stack ecosystem via Host Overrides:
+* `ai-brain.ai.local` -> `192.168.30.20`
+* `n8n.ai.local` -> `192.168.30.20`
+* `grafana.ai.local` -> `192.168.30.20`
 
 ### 25.6 Security Monitoring & SOC Integration
 **Rule 6 (Block & Log)** acts as a sensor for the AIOps monitoring stack:
-* **SOC Trigger:** Blocked packets generate log entries monitored by the `Suricata_Analyst` n8n workflow.
-* **Alerting:** Unauthorized access attempts (e.g., scanning the Guest VLAN) trigger immediate high-priority Telegram notifications.
+* **SOC Trigger:** Blocked packets generate log entries forwarded to the `syslog-ng` container.
+* **Alerting:** The `Suricata_Analyst` n8n workflow monitors logs and triggers immediate Telegram notifications for unauthorized access attempts.
 
-> **Status [2026-03-05]:** The WireGuard environment is verified as **Stable** and **Hardened**. Access is strictly identity-mapped, rule-loading errors are eliminated, and full audit logging is operational.
+> **Status [2026-03-06]:** The WireGuard environment is verified as **Stable**, **Hardened**, and **Production Ready**. Internal DNS resolution is operational without compromising Rebinding Protection.

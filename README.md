@@ -612,6 +612,7 @@ The primary reason for the initial "Handshake: Never" status was an incorrect Pu
 * **Data Flow:** Bi-directional traffic confirmed (Received/Sent bytes increasing).
 
 ---
+
 ## 25. Post-Implementation Security Hardening & Stability
 
 After establishing full connectivity, the following hardening steps were performed to ensure long-term stability and security for the remote access solution (Security+ Domain 3.2 & 4.4).
@@ -663,3 +664,69 @@ The Unbound DNS Resolver provides local resolution for the AI-Stack ecosystem vi
 * **Alerting:** The `Suricata_Analyst` n8n workflow monitors logs and triggers immediate Telegram notifications for unauthorized access attempts.
 
 > **Status [2026-03-06]:** The WireGuard environment is verified as **Stable**, **Hardened**, and **Production Ready**. Internal DNS resolution is operational without compromising Rebinding Protection.
+
+---
+
+## 26. Grafana Infrastructure Monitoring & Alerting
+
+To ensure high availability and proactive capacity management of the AI-Stack, a centralized monitoring and alerting system was implemented using Grafana, Prometheus, and Telegram.
+
+### 26.1 Notification Channel: Telegram Integration
+A dedicated Telegram Bot was integrated as the primary contact point for critical infrastructure alerts.
+
+* **Integration:** Grafana Alerting → Contact Points
+* **Bot Name:** `AI_Stack_Alert_Bot`
+* **Configuration:** * **Integration Type:** Telegram
+    * **Chat ID:** `1930764418`
+* **Status:** Verified via successful test notification.
+
+### 26.2 Infrastructure Alert Rules
+The following alerts were configured within the `Homelab` folder to monitor the health of the `ai-ops-01` node.
+
+#### A. Disk Space Critical (Storage)
+During implementation, it was discovered that `node-exporter` running in Docker mapped the root filesystem differently. The query was adjusted to target the specific physical device.
+
+* **Metric Analysis:** `node_filesystem_avail_bytes` verified via `curl http://localhost:9100/metrics`.
+* **Final Query:** ```promql
+    100 - (node_filesystem_avail_bytes{device="/dev/sda2"} / node_filesystem_size_bytes{device="/dev/sda2"} * 100)
+    ```
+* **Threshold:** `IS ABOVE 80%`
+* **Current State:** Verified at **77.19%** (Warning level).
+* **Group:** `disk-alerts`
+
+#### B. RAM Critical (Memory)
+Monitors the percentage of used memory to prevent OOM (Out of Memory) kills of AI models (Ollama).
+
+* **Query:** ```promql
+    (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100
+    ```
+* **Threshold:** `IS ABOVE 90%`
+* **Group:** `ram-alerts`
+
+#### C. Container Down (Availability)
+Monitors the reachability of the exporters and container status.
+
+* **Query:** ```promql
+    up{job="node"} == 0
+    ```
+* **Threshold:** `IS BELOW 1`
+* **Logic:** If the result table is empty, all systems are **UP**. An alert is only triggered if a target returns `0` (Down).
+* **Group:** `container-alerts`
+
+### 26.3 Troubleshooting & Metrics Discovery
+If metrics return `No Data`, the following diagnostic steps were established:
+1.  **Check Prometheus Exporter:** Verify raw data via `curl http://localhost:9100/metrics`.
+2.  **Verify Device Mapping:** Use `Explore` in Grafana to find correct labels (e.g., `device="/dev/sda2"` instead of `mountpoint="/"`).
+3.  **Prometheus Direct Query:** Confirm metrics are indexed at `http://192.168.30.20:9090`.
+
+---
+
+### 26.4 Summary of Monitoring Stack
+| Component | Function | Status |
+| :--- | :--- | :--- |
+| **node-exporter** | Collects hardware metrics | Active ✅ |
+| **Prometheus** | Time-series database | Active ✅ |
+| **Grafana** | Visualization & Alert Logic | Active ✅ |
+| **Telegram Bot** | Instant Alert Delivery | Active ✅ |
+
+> **Status [2026-03-09]:** Monitoring is fully operational. The system currently monitors Disk, RAM, and Container availability. Alerts are silenced during normal operation (Empty Table logic for "Container Down") and will fire immediately upon threshold violation.

@@ -730,3 +730,98 @@ If metrics return `No Data`, the following diagnostic steps were established:
 | **Telegram Bot** | Instant Alert Delivery | Active ✅ |
 
 > **Status [2026-03-09]:** Monitoring is fully operational. The system currently monitors Disk, RAM, and Container availability. Alerts are silenced during normal operation (Empty Table logic for "Container Down") and will fire immediately upon threshold violation.
+
+---
+
+## 27. Wazuh SIEM Integration (Status: 2026-03-20)
+
+### 27.1 Architecture
+A dedicated Wazuh SIEM VM was deployed to centralize security event management.
+
+| Component | Details |
+|-----------|---------|
+| **VM** | wazuh-siem (VM 107) |
+| **OS** | Ubuntu Server 24.04 |
+| **IP** | 192.168.30.20 |
+| **RAM** | 8GB |
+| **Disk** | 50GB |
+
+### 27.2 Agents Deployed
+| Agent | Host | Status |
+|-------|------|--------|
+| 001 | ai-ops-01 | Active ✅ |
+| 002 | Mint-Management | Active ✅ |
+
+### 27.3 Log Integration
+- pfSense logs forwarded via syslog-ng → Wazuh Agent on ai-ops-01
+- Suricata IDS alerts visible in Wazuh Dashboard
+- 82+ security events indexed
+
+### 27.4 SOC Stack (Complete)
+\`\`\`
+Network Traffic
+    ↓
+Suricata IDS (pfSense)
+    ↓
+syslog-ng (ai-ops-01)
+    ↓
+Wazuh Agent → Wazuh Manager
+    ↓
+Wazuh Dashboard (https://192.168.30.30)
+    ↓
+Telegram Alerts (n8n)
+\`\`\`
+
+---
+
+## 28. Terminal AI Agent & LiteLLM Gateway (Status: 2026-03-13)
+
+### 28.1 LiteLLM Gateway
+A unified AI gateway providing automatic model fallback.
+
+\`\`\`
+Request → LiteLLM (:4000)
+              ├── Gemini 2.0 Flash (Cloud)
+              ├── qwen2.5:14b (Local)
+              └── llama3 (Fallback)
+\`\`\`
+
+### 28.2 Terminal AI Agent (Aider)
+\`\`\`bash
+ai-local  # Start Aider with local Ollama
+ai        # Start Aider with Gemini
+\`\`\`
+
+Features:
+- Direct file editing in terminal
+- Git integration
+- Auto-fallback between models
+- MCP context awareness
+
+---
+
+## Current Infrastructure Status
+
+| VM | Name | IP | RAM | Status |
+|----|------|----|-----|--------|
+| 101 | pfSense-CE | 192.168.1.136 | - | Running ✅ |
+| 102 | Mint-Management | 10.0.10.52 | 4GB | Running ✅ |
+| 103 | Webserver-01 | - | - | Running ✅ |
+| 104 | DC-01 | - | - | Stopped ⏸ |
+| 105 | CL-01-WIN11 | - | - | Stopped ⏸ |
+| 106 | ai-ops-01 | 192.168.30.20 | 32GB | Running ✅ |
+| 107 | wazuh-siem | 192.168.30.30 | 8GB | Running ✅ |
+
+## Roadmap
+
+- [x] Proxmox + pfSense + VLANs
+- [x] AI Stack (Ollama + Open WebUI)
+- [x] n8n Automation + Telegram Bot
+- [x] Grafana + Prometheus Monitoring
+- [x] WireGuard VPN
+- [x] Wazuh SIEM
+- [x] LiteLLM + Aider Terminal Agent
+- [ ] Active Directory (DC-01)
+- [ ] Kali Linux Attacker VM
+- [ ] CI/CD Pipeline
+- [ ] CompTIA Security+ ← Current Focus
